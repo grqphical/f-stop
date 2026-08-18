@@ -7,15 +7,15 @@ import (
 	"github.com/grqphical/f-stop/internal/models"
 )
 
-var userIdCounter int = 0
-
 type MockDatabase struct {
-	users map[string]models.User
+	users         map[string]models.User
+	userIdCounter int
 }
 
 func NewMockDatabase() *MockDatabase {
 	return &MockDatabase{
-		users: make(map[string]models.User),
+		users:         make(map[string]models.User),
+		userIdCounter: 0,
 	}
 }
 
@@ -31,8 +31,8 @@ func (m *MockDatabase) CreateUser(username string, email string, password string
 	var user models.User
 	user.Username = username
 	user.Email = email
-	user.ID = userIdCounter
-	userIdCounter++
+	user.ID = m.userIdCounter
+	m.userIdCounter++
 
 	hash, err := auth.GenerateHashFromPassword(password)
 	if err != nil {

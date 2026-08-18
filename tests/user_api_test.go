@@ -43,6 +43,20 @@ func newMultipartRequest(t *testing.T, target string, fields map[string]string) 
 	return req
 }
 
+func createTestAccount(t *testing.T, router *gin.Engine, username string, email string, password string) {
+	formData := map[string]string{
+		"username": username,
+		"email":    email,
+		"password": password,
+	}
+	w := httptest.NewRecorder()
+	req := newMultipartRequest(t, "/api/v1/create-account", formData)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code, "status code not 201 CREATED")
+
+}
+
 func TestUserCreate(t *testing.T) {
 	router := server.NewMockServer()
 
@@ -76,25 +90,16 @@ func TestUserLogin(t *testing.T) {
 	router := server.NewMockServer()
 
 	// create an account to test with
-	formData := map[string]string{
-		"username": "johndoe",
-		"email":    "johndoe@gmail.com",
-		"password": "IAmAPassword!",
-	}
-	w := httptest.NewRecorder()
-	req := newMultipartRequest(t, "/api/v1/create-account", formData)
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusCreated, w.Code, "status code not 201 CREATED")
+	createTestAccount(t, router, "johndoe", "johndoe@gmail.com", "IAmAPassword!")
 
 	// test the login endpoint
-	formData = map[string]string{
+	formData := map[string]string{
 		"email":    "johndoe@gmail.com",
 		"password": "IAmAPassword!",
 	}
 
-	w = httptest.NewRecorder()
-	req = newMultipartRequest(t, "/api/v1/login", formData)
+	w := httptest.NewRecorder()
+	req := newMultipartRequest(t, "/api/v1/login", formData)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -118,7 +123,7 @@ func TestUserLogin(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 
-	var respJSON map[string]string
+	var respJSON map[string]any
 	err := json.NewDecoder(w.Body).Decode(&respJSON)
 	assert.NoError(t, err, "error occurred while decoding JSON")
 
@@ -140,4 +145,26 @@ func TestUserLogin(t *testing.T) {
 	assert.NoError(t, err, "error occurred while decoding JSON")
 
 	assert.Equal(t, respJSON["errorType"], "UserNotFound")
+}
+
+func TestGetUserInfo(t *testing.T) {
+	router := server.NewMockServer()
+	w := httptest.NewRecorder()
+
+	createTestAccount(t, router, "johndoe", "johndoe@gmail.com", "IAmAPassword!")
+
+	req, _ := http.NewRequest("GET", "/api/v1/user", nil)
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code, "did not recieve 200 OK")
+
+	var respJSON map[string]any
+	err := json.NewDecoder(w.Body).Decode(&respJSON)
+	assert.NoError(t, err, "error occurred while decoding JSON")
+
+	assert.Equal(t, respJSON["id"], 0.0, "ids do not match")
+	assert.Equal(t, respJSON["username"], "johndoe", "usernames do not match")
+	assert.Equal(t, respJSON["email"], "johndoe@gmail.com", "emails do not match")
+
 }
