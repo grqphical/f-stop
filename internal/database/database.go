@@ -57,12 +57,19 @@ func (d *Database) CreateUser(username string, email string, password string) (m
 		return models.User{}, pgxErrorToDatabaseError(err)
 	}
 
-	return d.GetUser(email)
+	return d.GetUserByEmail(email)
 }
 
-func (d *Database) GetUser(email string) (models.User, error) {
+func (d *Database) GetUserByEmail(email string) (models.User, error) {
 	var user models.User
 	err := d.conn.QueryRow(context.Background(), "SELECT user_id, username, email, password FROM Users WHERE email = $1", email).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash)
+
+	return user, err
+}
+
+func (d *Database) GetUserByID(id int) (models.User, error) {
+	var user models.User
+	err := d.conn.QueryRow(context.Background(), "SELECT user_id, username, email, password FROM Users WHERE user_id = $1", id).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash)
 
 	return user, err
 }

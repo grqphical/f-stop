@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/grqphical/f-stop/internal/auth"
 	"github.com/grqphical/f-stop/internal/database"
+	"github.com/grqphical/f-stop/internal/models"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -33,7 +34,7 @@ func (s *Server) LoginHandler(c *gin.Context) {
 	email := c.PostForm("email")
 	password := c.PostForm("password")
 
-	user, err := s.db.GetUser(email)
+	user, err := s.db.GetUserByEmail(email)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			httpError(c, http.StatusNotFound, "UserNotFound", "user with given email could not be found")
@@ -65,4 +66,13 @@ func (s *Server) LoginHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{})
 
+}
+
+func (s *Server) GetUserHandler(c *gin.Context) {
+	userVal, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+	}
+	user := userVal.(models.User)
+	c.JSON(http.StatusOK, user)
 }

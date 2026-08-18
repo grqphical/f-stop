@@ -26,6 +26,7 @@ func (s *Server) GenerateRouter() http.Handler {
 
 	v1.POST("/create-account", s.CreateAccountHandler)
 	v1.POST("/login", s.LoginHandler)
+	v1.GET("/user", s.Authorization(), s.GetUserHandler)
 
 	return router
 }
