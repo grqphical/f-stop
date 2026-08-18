@@ -19,6 +19,8 @@ func New() *Database {
 		log.Fatalf("failed to connect to Postgres: %v\n", err)
 	}
 
+	applyMigrations(os.Getenv("DATABASE_URL"))
+
 	return &Database{
 		conn,
 	}
