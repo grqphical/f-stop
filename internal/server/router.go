@@ -28,5 +28,7 @@ func (s *Server) GenerateRouter() http.Handler {
 	v1.POST("/login", s.LoginHandler)
 	v1.GET("/user", s.Authorization(), s.GetUserHandler)
 
+	v1.PUT("/upload-photo", s.Authorization(), s.UploadPhotoHandler)
+
 	return router
 }
