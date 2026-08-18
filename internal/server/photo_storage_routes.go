@@ -78,7 +78,7 @@ func (s *Server) GetPhotoHandler(c *gin.Context) {
 }
 
 // Handler in charge of serving the actual photo files
-func (s *Server) PhotoHandler(c *gin.Context) {
+func (s *Server) StaticPhotoHandler(c *gin.Context) {
 	filename := c.Param("filename")
 	id := strings.TrimSuffix(filename, filepath.Ext(filename))
 
