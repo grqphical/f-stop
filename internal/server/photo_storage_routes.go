@@ -51,3 +51,22 @@ func (s *Server) UploadPhotoHandler(c *gin.Context) {
 	})
 
 }
+
+// API call that returns a permalink to a photo based on it's ID
+func (s *Server) GetPhotoHandler(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	metadata, err := s.db.GetPhotoMetadataFromID(id)
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+
+	}
+
+	c.JSON(http.StatusOK, metadata)
+}

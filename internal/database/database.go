@@ -3,8 +3,10 @@ package database
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/grqphical/f-stop/internal/auth"
@@ -100,4 +102,14 @@ func (d *Database) UpdatePhotoMetadataFilePath(uuid string, filepath string) err
 	_, err := d.conn.Exec(context.Background(), "UPDATE Photos SET filepath = $1 WHERE photo_id = $2", filepath, uuid)
 	return err
 
+}
+
+func (d *Database) GetPhotoMetadataFromID(uuid string) (models.PhotoMetadata, error) {
+	var metadata models.PhotoMetadata
+	err := d.conn.QueryRow(context.Background(), "SELECT * FROM Photos WHERE photo_id = $1", uuid).
+		Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.Uploaded, &metadata.Size, &metadata.MimeType)
+
+	metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(metadata.Filepath))
+
+	return metadata, err
 }
