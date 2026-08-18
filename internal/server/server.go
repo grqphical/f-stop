@@ -8,12 +8,14 @@ import (
 	"strconv"
 
 	"github.com/grqphical/f-stop/internal/database"
+	"github.com/grqphical/f-stop/internal/storage"
 	_ "github.com/joho/godotenv/autoload"
 )
 
 type Server struct {
 	port int
 	db   *database.Database
+	si   *storage.StorageInterface
 }
 
 func New() *http.Server {
@@ -26,6 +28,7 @@ func New() *http.Server {
 
 	s.port = port
 	s.db = database.New()
+	s.si = storage.New()
 
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),

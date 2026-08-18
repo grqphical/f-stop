@@ -21,12 +21,18 @@ func httpError(c *gin.Context, status int, errorType string, message string) {
 func (s *Server) GenerateRouter() http.Handler {
 	router := gin.Default()
 
+	router.GET("/storage/:filename", s.Authorization(), s.StaticPhotoHandler)
+
 	api := router.Group("/api")
 	v1 := api.Group("/v1")
 
 	v1.POST("/create-account", s.CreateAccountHandler)
 	v1.POST("/login", s.LoginHandler)
 	v1.GET("/user", s.Authorization(), s.GetUserHandler)
+
+	v1.PUT("/photo", s.Authorization(), s.UploadPhotoHandler)
+	v1.GET("/photo/:id", s.Authorization(), s.GetPhotoHandler)
+	v1.DELETE("/photo/:id", s.Authorization(), s.DeletePhotoHandler)
 
 	return router
 }
