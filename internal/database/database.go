@@ -2,14 +2,27 @@ package database
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 
 	"github.com/grqphical/f-stop/internal/auth"
 	"github.com/grqphical/f-stop/internal/models"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/joho/godotenv/autoload"
 )
+
+func pgxErrorToDatabaseError(err error) error {
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
+		if pgErr.Code == "23505" {
+			return ErrUniqueConstraint
+		} else {
+			return err
+		}
+	}
+	return nil
+}
 
 type Database struct {
 	conn *pgx.Conn
@@ -40,7 +53,8 @@ func (d *Database) CreateUser(username string, email string, password string) (m
 
 	_, err = d.conn.Exec(context.Background(), "INSERT INTO Users (username, email, password) VALUES ($1, $2, $3)", username, email, hashedPassword)
 	if err != nil {
-		return models.User{}, err
+
+		return models.User{}, pgxErrorToDatabaseError(err)
 	}
 
 	var user models.User
