@@ -113,3 +113,8 @@ func (d *Database) GetPhotoMetadataFromID(uuid string) (models.PhotoMetadata, er
 
 	return metadata, err
 }
+
+func (d *Database) DeletePhoto(uuid string) error {
+	_, err := d.conn.Exec(context.Background(), "DELETE FROM Photos WHERE photo_id = $1", uuid)
+	return err
+}
