@@ -17,7 +17,6 @@ func main() {
 	s := server.New()
 
 	go func() {
-		log.Printf("starting server on %s\n", s.Addr)
 		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("server error: %v\n", err)
 		}
