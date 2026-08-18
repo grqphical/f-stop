@@ -87,6 +87,55 @@ func TestPhotoUpload(t *testing.T) {
 
 }
 
+func TestListAllPhotos(t *testing.T) {
+	router := server.NewMockServer()
+
+	// create necessary authentication cookie
+	createTestAccount(t, router, "johndoe", "johndoe@gmail.com", "IAmAPassword!")
+	generateAuthorizationCookie(t, router, "johndoe@gmail.com", "IAmAPassword!")
+
+	assert.NotNil(t, authorizationCookie, "authorizationCookie is nil")
+
+	// check to make sure no photos are returned
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/photo/all", nil)
+	req.AddCookie(authorizationCookie)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var respJSON map[string]any
+	err := json.NewDecoder(w.Body).Decode(&respJSON)
+	assert.NoError(t, err, "error occurred while decoding JSON")
+
+	assert.Empty(t, respJSON["photos"], "photos is not empty")
+
+	// upload the photo
+	w = httptest.NewRecorder()
+	req = newMultipartFileRequest(t, "/api/v1/photo", "test_data/perlin_noise.png")
+	req.AddCookie(authorizationCookie)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// retrieve every photo
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, "/api/v1/photo/all", nil)
+	req.AddCookie(authorizationCookie)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	respJSON = make(map[string]any)
+	err = json.NewDecoder(w.Body).Decode(&respJSON)
+	assert.NoError(t, err, "error occurred while decoding JSON")
+
+	assert.NotEmpty(t, respJSON["photos"], "photos is empty")
+}
+
 func TestPhotoDeletion(t *testing.T) {
 	router := server.NewMockServer()
 

@@ -112,7 +112,15 @@ func (m *MockDatabase) GetPhotoMetadataFromID(id string) (models.PhotoMetadata, 
 }
 
 func (m *MockDatabase) GetUserPhotos(id int) ([]models.PhotoMetadata, error) {
-	return nil, nil
+	result := make([]models.PhotoMetadata, 0)
+
+	for _, photo := range m.photos {
+		if photo.OwnerID == id {
+			result = append(result, photo)
+		}
+	}
+
+	return result, nil
 }
 
 func (m *MockDatabase) DeletePhoto(id string) error {
