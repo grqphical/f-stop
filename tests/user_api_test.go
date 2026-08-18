@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var authorizationCookie *http.Cookie
+
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 	os.Exit(m.Run())
@@ -68,4 +70,74 @@ func TestUserCreate(t *testing.T) {
 	err := json.NewDecoder(w.Body).Decode(&respJSON)
 	assert.NoError(t, err, "error occurred while decoding JSON")
 	assert.Equal(t, "UserAlreadyExists", respJSON["errorType"], "incorrect error message received")
+}
+
+func TestUserLogin(t *testing.T) {
+	router := server.NewMockServer()
+
+	// create an account to test with
+	formData := map[string]string{
+		"username": "johndoe",
+		"email":    "johndoe@gmail.com",
+		"password": "IAmAPassword!",
+	}
+	w := httptest.NewRecorder()
+	req := newMultipartRequest(t, "/api/v1/create-account", formData)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code, "status code not 201 CREATED")
+
+	// test the login endpoint
+	formData = map[string]string{
+		"email":    "johndoe@gmail.com",
+		"password": "IAmAPassword!",
+	}
+
+	w = httptest.NewRecorder()
+	req = newMultipartRequest(t, "/api/v1/login", formData)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.NotEmpty(t, w.Result().Cookies())
+
+	cookie := w.Result().Cookies()[0]
+	assert.Equal(t, cookie.Name, "Authorization")
+	assert.Equal(t, cookie.HttpOnly, true)
+
+	authorizationCookie = cookie
+
+	// test the login endpoint with an incorrect password
+	formData = map[string]string{
+		"email":    "johndoe@gmail.com",
+		"password": "IAmTheWrongPassword!",
+	}
+
+	w = httptest.NewRecorder()
+	req = newMultipartRequest(t, "/api/v1/login", formData)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	var respJSON map[string]string
+	err := json.NewDecoder(w.Body).Decode(&respJSON)
+	assert.NoError(t, err, "error occurred while decoding JSON")
+
+	assert.Equal(t, respJSON["errorType"], "InvalidCredentials")
+
+	// test the login endpoint with a non-existent email
+	formData = map[string]string{
+		"email":    "janedoe@gmail.com",
+		"password": "IAmAPassword!",
+	}
+
+	w = httptest.NewRecorder()
+	req = newMultipartRequest(t, "/api/v1/login", formData)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	err = json.NewDecoder(w.Body).Decode(&respJSON)
+	assert.NoError(t, err, "error occurred while decoding JSON")
+
+	assert.Equal(t, respJSON["errorType"], "UserNotFound")
 }

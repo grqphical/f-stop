@@ -48,11 +48,23 @@ func (m *MockDatabase) CreateUser(username string, email string, password string
 }
 
 func (m *MockDatabase) GetUserByEmail(email string) (models.User, error) {
-	return models.User{}, nil
+	for _, user := range m.users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+
+	return models.User{}, ErrNotFound
 }
 
 func (m *MockDatabase) GetUserByID(id int) (models.User, error) {
-	return models.User{}, nil
+	stringId := strconv.Itoa(id)
+	user, exists := m.users[stringId]
+	if !exists {
+		return models.User{}, ErrNotFound
+	}
+
+	return user, nil
 }
 
 func (m *MockDatabase) CreatePhotoMetadata(arg1 int64, arg2 string, arg3 int) (string, error) {

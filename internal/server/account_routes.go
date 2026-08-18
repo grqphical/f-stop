@@ -2,13 +2,13 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/grqphical/f-stop/internal/auth"
 	"github.com/grqphical/f-stop/internal/database"
 	"github.com/grqphical/f-stop/internal/models"
-	"github.com/jackc/pgx/v5"
 )
 
 func (s *Server) CreateAccountHandler(c *gin.Context) {
@@ -36,17 +36,19 @@ func (s *Server) LoginHandler(c *gin.Context) {
 
 	user, err := s.db.GetUserByEmail(email)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, database.ErrNotFound) {
 			httpError(c, http.StatusNotFound, "UserNotFound", "user with given email could not be found")
 			return
 		}
 		httpError(c, http.StatusInternalServerError, "InternalServerError", "an internal server error occured")
+		fmt.Printf("error: %v\n", err)
 		return
 	}
 
 	match, err := auth.ComparePasswordAndHash(password, user.PasswordHash)
 	if err != nil {
 		httpError(c, http.StatusInternalServerError, "InternalServerError", "an internal server error occured")
+		fmt.Printf("error: %v\n", err)
 		return
 	}
 
@@ -58,6 +60,7 @@ func (s *Server) LoginHandler(c *gin.Context) {
 	jwtToken, err := auth.GenerateJWT(user.ID)
 	if err != nil {
 		httpError(c, http.StatusInternalServerError, "InternalServerError", "an internal server error occured")
+		fmt.Printf("error: %v\n", err)
 		return
 	}
 
