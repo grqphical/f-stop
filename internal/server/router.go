@@ -1,8 +1,6 @@
 package server
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +16,7 @@ func httpError(c *gin.Context, status int, errorType string, message string) {
 	})
 }
 
-func (s *Server) GenerateRouter() http.Handler {
+func (s *Server) GenerateRouter() *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/storage/:filename", s.Authorization(), s.StaticPhotoHandler)

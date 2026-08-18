@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/gin-gonic/gin"
 	"github.com/grqphical/f-stop/internal/database"
 	"github.com/grqphical/f-stop/internal/storage"
 	_ "github.com/joho/godotenv/autoload"
@@ -14,8 +15,8 @@ import (
 
 type Server struct {
 	port int
-	db   *database.Database
-	si   *storage.StorageInterface
+	db   database.DBInterface
+	si   storage.StorageInterface
 }
 
 func New() *http.Server {
@@ -37,4 +38,13 @@ func New() *http.Server {
 
 	httpServer.RegisterOnShutdown(s.db.Close)
 	return httpServer
+}
+
+func NewMockServer() *gin.Engine {
+	s := &Server{}
+	s.db = database.NewMockDatabase()
+	s.si = storage.NewMockInterface()
+
+	return s.GenerateRouter()
+
 }

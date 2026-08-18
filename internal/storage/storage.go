@@ -8,11 +8,16 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-type StorageInterface struct {
+type StorageInterface interface {
+	GetStorageLocation() string
+	StoreItem(string) string
+}
+
+type Storage struct {
 	directory string
 }
 
-func New() *StorageInterface {
+func New() *Storage {
 	directory := os.Getenv("PHOTO_STORAGE_DIRECTORY")
 	if directory == "" {
 		log.Fatal("no storage directory was provided")
@@ -31,16 +36,16 @@ func New() *StorageInterface {
 		}
 	}
 
-	return &StorageInterface{
+	return &Storage{
 		directory,
 	}
 }
 
-func (s *StorageInterface) GetStorageLocation() string {
+func (s *Storage) GetStorageLocation() string {
 	return s.directory
 }
 
 // Given a filename, this function returns the fullpath where the file should be written to
-func (s *StorageInterface) StoreItem(filename string) string {
+func (s *Storage) StoreItem(filename string) string {
 	return filepath.Join(s.directory, filename)
 }

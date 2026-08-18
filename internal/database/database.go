@@ -17,6 +17,10 @@ import (
 )
 
 func pgxErrorToDatabaseError(err error) error {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	}
+
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 		if pgErr.Code == "23505" {
 			return ErrUniqueConstraint
