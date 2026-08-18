@@ -86,3 +86,54 @@ func TestPhotoUpload(t *testing.T) {
 	assert.Equal(t, originalFileHash, hasher.Sum(nil), "file hashes do not match")
 
 }
+
+func TestPhotoDeletion(t *testing.T) {
+	router := server.NewMockServer()
+
+	// create necessary authentication cookie
+	createTestAccount(t, router, "johndoe", "johndoe@gmail.com", "IAmAPassword!")
+	generateAuthorizationCookie(t, router, "johndoe@gmail.com", "IAmAPassword!")
+
+	assert.NotNil(t, authorizationCookie, "authorizationCookie is nil")
+
+	// upload the photo
+	w := httptest.NewRecorder()
+	req := newMultipartFileRequest(t, "/api/v1/photo", "test_data/perlin_noise.png")
+	req.AddCookie(authorizationCookie)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var respJSON map[string]string
+	err := json.NewDecoder(w.Body).Decode(&respJSON)
+	assert.NoError(t, err, "error occurred while decoding JSON")
+
+	photoID, exists := respJSON["photoId"]
+	assert.True(t, exists, "field 'photoId' does not exist on response")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/v1/photo/%s", photoID), nil)
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// make sure photo metadata does not exist
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/photo/%s", photoID), nil)
+	req.AddCookie(authorizationCookie)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	// make sure photo itself does not exist
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/storage/%s.png", photoID), nil)
+	req.AddCookie(authorizationCookie)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}

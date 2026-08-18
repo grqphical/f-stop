@@ -112,5 +112,6 @@ func (m *MockDatabase) GetPhotoMetadataFromID(id string) (models.PhotoMetadata, 
 }
 
 func (m *MockDatabase) DeletePhoto(id string) error {
+	delete(m.photos, id)
 	return nil
 }

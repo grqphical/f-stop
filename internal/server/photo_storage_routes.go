@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/grqphical/f-stop/internal/database"
 	"github.com/grqphical/f-stop/internal/models"
-	"github.com/jackc/pgx/v5"
 )
 
 func (s *Server) UploadPhotoHandler(c *gin.Context) {
@@ -68,7 +68,7 @@ func (s *Server) GetPhotoHandler(c *gin.Context) {
 
 	metadata, err := s.db.GetPhotoMetadataFromID(id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, database.ErrNotFound) {
 			httpError(c, http.StatusNotFound, "PhotoNotFound", "A photo with that ID could not be found")
 			return
 		}
@@ -88,7 +88,7 @@ func (s *Server) StaticPhotoHandler(c *gin.Context) {
 
 	photo, err := s.db.GetPhotoMetadataFromID(id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, database.ErrNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
@@ -128,7 +128,7 @@ func (s *Server) DeletePhotoHandler(c *gin.Context) {
 
 	photo, err := s.db.GetPhotoMetadataFromID(id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, database.ErrNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
