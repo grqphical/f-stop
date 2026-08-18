@@ -1,13 +1,19 @@
 package server
 
 import (
+	"errors"
+	"fmt"
+	"io"
 	"log"
 	"mime"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/grqphical/f-stop/internal/models"
+	"github.com/jackc/pgx/v5"
 )
 
 func (s *Server) UploadPhotoHandler(c *gin.Context) {
@@ -69,4 +75,46 @@ func (s *Server) GetPhotoHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, metadata)
+}
+
+// Handler in charge of serving the actual photo files
+func (s *Server) PhotoHandler(c *gin.Context) {
+	filename := c.Param("filename")
+	id := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	photo, err := s.db.GetPhotoMetadataFromID(id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
+		fmt.Printf("error: %v\n", err)
+		return
+	}
+
+	// make sure photo actually belongs to the user
+	userVal, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	user := userVal.(models.User)
+
+	if user.ID != photo.OwnerID {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+
+	}
+
+	photoFile, err := os.Open(photo.Filepath)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		fmt.Printf("error: %v\n", err)
+		return
+	}
+	defer photoFile.Close()
+
+	c.Header("Content-Type", photo.MimeType)
+	io.Copy(c.Writer, photoFile)
 }

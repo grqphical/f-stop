@@ -21,7 +21,7 @@ func httpError(c *gin.Context, status int, errorType string, message string) {
 func (s *Server) GenerateRouter() http.Handler {
 	router := gin.Default()
 
-	router.Static("/storage", s.si.GetStorageLocation())
+	router.GET("/storage/:filename", s.Authorization(), s.PhotoHandler)
 
 	api := router.Group("/api")
 	v1 := api.Group("/v1")
