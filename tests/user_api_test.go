@@ -1,61 +1,14 @@
 package tests
 
 import (
-	"bytes"
 	"encoding/json"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/grqphical/f-stop/internal/server"
 	"github.com/stretchr/testify/assert"
 )
-
-var authorizationCookie *http.Cookie
-
-func TestMain(m *testing.M) {
-	gin.SetMode(gin.TestMode)
-	os.Exit(m.Run())
-}
-
-// newMultipartRequest builds a POST request populated with form fields and proper headers.
-func newMultipartRequest(t *testing.T, target string, fields map[string]string) *http.Request {
-	t.Helper()
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	for key, val := range fields {
-		if err := writer.WriteField(key, val); err != nil {
-			t.Fatalf("Failed to write field %q: %v", key, err)
-		}
-	}
-
-	if err := writer.Close(); err != nil {
-		t.Fatalf("Failed to close multipart writer: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodPost, target, body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	return req
-}
-
-func createTestAccount(t *testing.T, router *gin.Engine, username string, email string, password string) {
-	formData := map[string]string{
-		"username": username,
-		"email":    email,
-		"password": password,
-	}
-	w := httptest.NewRecorder()
-	req := newMultipartRequest(t, "/api/v1/create-account", formData)
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusCreated, w.Code, "status code not 201 CREATED")
-
-}
 
 func TestUserCreate(t *testing.T) {
 	router := server.NewMockServer()

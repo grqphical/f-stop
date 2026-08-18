@@ -1,8 +1,12 @@
 package database
 
 import (
+	"fmt"
+	"path/filepath"
 	"strconv"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/grqphical/f-stop/internal/auth"
 	"github.com/grqphical/f-stop/internal/models"
 )
@@ -10,12 +14,14 @@ import (
 type MockDatabase struct {
 	users         map[string]models.User
 	userIdCounter int
+	photos        map[string]models.PhotoMetadata
 }
 
 func NewMockDatabase() *MockDatabase {
 	return &MockDatabase{
 		users:         make(map[string]models.User),
 		userIdCounter: 0,
+		photos:        make(map[string]models.PhotoMetadata),
 	}
 }
 
@@ -67,16 +73,42 @@ func (m *MockDatabase) GetUserByID(id int) (models.User, error) {
 	return user, nil
 }
 
-func (m *MockDatabase) CreatePhotoMetadata(arg1 int64, arg2 string, arg3 int) (string, error) {
-	return "", nil
+func (m *MockDatabase) CreatePhotoMetadata(size int64, mimeType string, ownerID int) (string, error) {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return "", err
+	}
+
+	m.photos[id.String()] = models.PhotoMetadata{
+		ID:       id.String(),
+		OwnerID:  ownerID,
+		Size:     int(size),
+		MimeType: mimeType,
+		Uploaded: time.Now(),
+	}
+
+	return id.String(), nil
 }
 
 func (m *MockDatabase) UpdatePhotoMetadataFilePath(id, filePath string) error {
+	metadata, exists := m.photos[id]
+	if !exists {
+		return ErrNotFound
+	}
+	metadata.Filepath = filePath
+	metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(filePath))
+
+	m.photos[id] = metadata
 	return nil
 }
 
 func (m *MockDatabase) GetPhotoMetadataFromID(id string) (models.PhotoMetadata, error) {
-	return models.PhotoMetadata{}, nil
+	metadata, exists := m.photos[id]
+	if !exists {
+		return metadata, ErrNotFound
+	}
+
+	return metadata, nil
 }
 
 func (m *MockDatabase) DeletePhoto(id string) error {
