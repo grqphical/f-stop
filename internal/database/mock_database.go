@@ -10,19 +10,26 @@ import (
 var userIdCounter int = 0
 
 type MockDatabase struct {
-	store map[string]any
+	users map[string]models.User
 }
 
 func NewMockDatabase() *MockDatabase {
 	return &MockDatabase{
-		store: make(map[string]any),
+		users: make(map[string]models.User),
 	}
 }
 
 func (m *MockDatabase) Close() {}
 
 func (m *MockDatabase) CreateUser(username string, email string, password string) (models.User, error) {
+	for _, user := range m.users {
+		if user.Email == email || user.Username == username {
+			return models.User{}, ErrUniqueConstraint
+		}
+	}
+
 	var user models.User
+	user.Username = username
 	user.Email = email
 	user.ID = userIdCounter
 	userIdCounter++
@@ -35,7 +42,31 @@ func (m *MockDatabase) CreateUser(username string, email string, password string
 	user.PasswordHash = hash
 
 	key := strconv.Itoa(user.ID)
-	m.store[key] = user
+	m.users[key] = user
 
 	return user, nil
+}
+
+func (m *MockDatabase) GetUserByEmail(email string) (models.User, error) {
+	return models.User{}, nil
+}
+
+func (m *MockDatabase) GetUserByID(id int) (models.User, error) {
+	return models.User{}, nil
+}
+
+func (m *MockDatabase) CreatePhotoMetadata(arg1 int64, arg2 string, arg3 int) (string, error) {
+	return "", nil
+}
+
+func (m *MockDatabase) UpdatePhotoMetadataFilePath(id, filePath string) error {
+	return nil
+}
+
+func (m *MockDatabase) GetPhotoMetadataFromID(id string) (models.PhotoMetadata, error) {
+	return models.PhotoMetadata{}, nil
+}
+
+func (m *MockDatabase) DeletePhoto(id string) error {
+	return nil
 }
