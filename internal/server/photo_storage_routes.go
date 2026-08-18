@@ -81,6 +81,32 @@ func (s *Server) GetPhotoHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, metadata)
 }
 
+func (s *Server) GetUserPhotosHandler(c *gin.Context) {
+	userVal, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	user := userVal.(models.User)
+
+	photos, err := s.db.GetUserPhotos(user.ID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			c.JSON(http.StatusOK, gin.H{
+				"photos": []any{},
+			})
+			return
+		}
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"photos": photos,
+	})
+}
+
 // Handler in charge of serving the actual photo files
 func (s *Server) StaticPhotoHandler(c *gin.Context) {
 	filename := c.Param("filename")

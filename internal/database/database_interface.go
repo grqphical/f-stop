@@ -13,5 +13,6 @@ type DBInterface interface {
 	CreatePhotoMetadata(int64, string, int) (string, error)
 	UpdatePhotoMetadataFilePath(string, string) error
 	GetPhotoMetadataFromID(string) (models.PhotoMetadata, error)
+	GetUserPhotos(int) ([]models.PhotoMetadata, error)
 	DeletePhoto(string) error
 }

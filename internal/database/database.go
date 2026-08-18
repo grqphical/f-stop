@@ -115,10 +115,32 @@ func (d *Database) GetPhotoMetadataFromID(uuid string) (models.PhotoMetadata, er
 
 	metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(metadata.Filepath))
 
-	return metadata, err
+	return metadata, pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) GetUserPhotos(ownerId int) ([]models.PhotoMetadata, error) {
+	var result []models.PhotoMetadata = make([]models.PhotoMetadata, 0)
+	rows, err := d.conn.Query(context.Background(), "SELECT * FROM Photos WHERE owner_id = $1", ownerId)
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+
+	for rows.Next() {
+		var metadata models.PhotoMetadata
+		err = rows.Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.Uploaded, &metadata.Size, &metadata.MimeType)
+		if err != nil {
+			return nil, pgxErrorToDatabaseError(err)
+		}
+
+		metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(metadata.Filepath))
+
+		result = append(result, metadata)
+	}
+
+	return result, nil
 }
 
 func (d *Database) DeletePhoto(uuid string) error {
 	_, err := d.conn.Exec(context.Background(), "DELETE FROM Photos WHERE photo_id = $1", uuid)
-	return err
+	return pgxErrorToDatabaseError(err)
 }

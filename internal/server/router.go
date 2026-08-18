@@ -31,6 +31,7 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	v1.PUT("/photo", s.Authorization(), s.UploadPhotoHandler)
 	v1.GET("/photo/:id", s.Authorization(), s.GetPhotoHandler)
 	v1.DELETE("/photo/:id", s.Authorization(), s.DeletePhotoHandler)
+	v1.GET("/photo/all", s.Authorization(), s.GetUserPhotosHandler)
 
 	return router
 }
