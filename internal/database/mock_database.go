@@ -156,3 +156,5 @@ func (m *MockDatabase) DequeueJob(batch_size int, max_retries int) (models.Job, 
 }
 func (m *MockDatabase) AcknowledgeSuccess(job_id int) error { return nil }
 func (m *MockDatabase) AcknowledgeFailure(job_id int) error { return nil }
+
+func (m *MockDatabase) GetJob(jobId int) (models.Job, error) { return models.Job{}, nil }

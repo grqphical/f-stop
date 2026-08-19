@@ -291,3 +291,25 @@ WHERE id = $1;`, job_id)
 
 	return pgxErrorToDatabaseError(err)
 }
+
+func (d *Database) GetJob(job_id int) (models.Job, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return models.Job{}, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	var job models.Job
+	err = conn.QueryRow(context.Background(), "SELECT * FROM Jobs WHERE id = $1", job_id).
+		Scan(
+			&job.ID,
+			&job.Status,
+			&job.Payload,
+			&job.VisibleAt,
+			&job.RetryCount,
+			&job.CreatedAt,
+			&job.UpdatedAt,
+		)
+
+	return job, pgxErrorToDatabaseError(err)
+}

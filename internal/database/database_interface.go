@@ -22,4 +22,5 @@ type DBInterface interface {
 	DequeueJob(batch_size int, max_retries int) (models.Job, error)
 	AcknowledgeSuccess(job_id int) error
 	AcknowledgeFailure(job_id int) error
+	GetJob(job_id int) (models.Job, error)
 }
