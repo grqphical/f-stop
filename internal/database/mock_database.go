@@ -128,7 +128,9 @@ func (m *MockDatabase) DeletePhoto(id string) error {
 	return nil
 }
 
-func (m *MockDatabase) EnqueueJob(payload models.JobPayload) error    { return nil }
-func (m *MockDatabase) DequeueJob(batch_size int) (models.Job, error) { return models.Job{}, nil }
-func (m *MockDatabase) AcknowledgeSuccess(job_id int) error           { return nil }
-func (m *MockDatabase) AcknowledgeFailure(job_id int) error           { return nil }
+func (m *MockDatabase) EnqueueJob(payload models.JobPayload) error { return nil }
+func (m *MockDatabase) DequeueJob(batch_size int, max_retries int) (models.Job, error) {
+	return models.Job{}, nil
+}
+func (m *MockDatabase) AcknowledgeSuccess(job_id int) error { return nil }
+func (m *MockDatabase) AcknowledgeFailure(job_id int) error { return nil }

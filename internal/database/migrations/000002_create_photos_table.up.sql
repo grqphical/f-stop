@@ -4,5 +4,5 @@ CREATE TABLE IF NOT EXISTS Photos (
     filepath VARCHAR(512) NOT NULL,
     uploaded_timestamp timestamp NOT NULL,
     size integer NOT NULL,
-    mime_type VARCHAR(64) NOT NULL,
+    mime_type VARCHAR(64) NOT NULL
 )

@@ -209,24 +209,25 @@ func (d *Database) EnqueueJob(payload models.JobPayload) error {
 	return nil
 }
 
-func (d *Database) DequeueJob(batch_size int) (models.Job, error) {
+func (d *Database) DequeueJob(batchSize int, maxRetries int) (models.Job, error) {
 	conn, err := d.workerPool.Acquire(context.Background())
 	if err != nil {
 		return models.Job{}, pgxErrorToDatabaseError(err)
 	}
 	defer conn.Release()
+
 	var job models.Job
 	err = conn.QueryRow(context.Background(), `WITH next_job AS (
     SELECT id
     FROM jobs
     WHERE
-        retry_count < :max_retries
+        retry_count < $1
         AND (
             status = 'pending'
             OR (status = 'in_progress' AND visible_at <= now())
         )
     ORDER BY created_at
-    LIMIT :batch_size
+    LIMIT $2
     FOR UPDATE SKIP LOCKED
 )
 UPDATE jobs
@@ -236,12 +237,11 @@ SET status = 'in_progress',
     retry_count = retry_count + 1
 FROM next_job
 WHERE jobs.id = next_job.id
-RETURNING jobs.*;`).
+RETURNING jobs.*;`, maxRetries, batchSize).
 		Scan(&job.ID, &job.Status, &job.Payload, &job.VisibleAt, &job.RetryCount, &job.CreatedAt, &job.UpdatedAt)
 
 	return job, pgxErrorToDatabaseError(err)
 }
-
 func (d *Database) AcknowledgeSuccess(job_id int) error {
 	conn, err := d.workerPool.Acquire(context.Background())
 	if err != nil {
@@ -251,7 +251,7 @@ func (d *Database) AcknowledgeSuccess(job_id int) error {
 	_, err = conn.Exec(context.Background(), `UPDATE jobs
 SET status = 'done',
     updated_at = now()
-WHERE id = :job_id;`)
+WHERE id = $1;`, job_id)
 
 	return pgxErrorToDatabaseError(err)
 }
@@ -264,7 +264,7 @@ func (d *Database) AcknowledgeFailure(job_id int) error {
 	_, err = conn.Exec(context.Background(), `UPDATE jobs
 SET status = 'failed',
     updated_at = now()
-WHERE id = :job_id;`)
+WHERE id = $1;`, job_id)
 
 	return pgxErrorToDatabaseError(err)
 }

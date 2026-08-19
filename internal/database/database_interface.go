@@ -17,7 +17,7 @@ type DBInterface interface {
 	DeletePhoto(string) error
 
 	EnqueueJob(payload models.JobPayload) error
-	DequeueJob(batch_size int) (models.Job, error)
+	DequeueJob(batch_size int, max_retries int) (models.Job, error)
 	AcknowledgeSuccess(job_id int) error
 	AcknowledgeFailure(job_id int) error
 }
