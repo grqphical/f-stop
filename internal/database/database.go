@@ -18,18 +18,19 @@ import (
 )
 
 func pgxErrorToDatabaseError(err error) error {
+	if err == nil {
+		return nil
+	}
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrNotFound
 	}
-
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 		if pgErr.Code == "23505" {
 			return ErrUniqueConstraint
-		} else {
-			return err
 		}
+		return err
 	}
-	return nil
+	return err
 }
 
 type Database struct {
@@ -144,6 +145,16 @@ func (d *Database) UpdatePhotoMetadataFilePath(uuid string, filepath string) err
 
 }
 
+func (d *Database) SetPhotoThumbnailPath(uuid string, path string) error {
+	conn, err := d.apiPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+	_, err = conn.Exec(context.Background(), "UPDATE Photos SET thumbnail_filepath = $1 WHERE photo_id = $2", path, uuid)
+	return err
+}
+
 func (d *Database) GetPhotoMetadataFromID(uuid string) (models.PhotoMetadata, error) {
 	conn, err := d.apiPool.Acquire(context.Background())
 	if err != nil {
@@ -152,7 +163,7 @@ func (d *Database) GetPhotoMetadataFromID(uuid string) (models.PhotoMetadata, er
 	defer conn.Release()
 	var metadata models.PhotoMetadata
 	err = conn.QueryRow(context.Background(), "SELECT * FROM Photos WHERE photo_id = $1", uuid).
-		Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.Uploaded, &metadata.Size, &metadata.MimeType)
+		Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.ThumbnailFilepath, &metadata.ThumbnailJobId, &metadata.Uploaded, &metadata.Size, &metadata.MimeType)
 
 	metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(metadata.Filepath))
 
@@ -173,7 +184,7 @@ func (d *Database) GetUserPhotos(ownerId int) ([]models.PhotoMetadata, error) {
 
 	for rows.Next() {
 		var metadata models.PhotoMetadata
-		err = rows.Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.Uploaded, &metadata.Size, &metadata.MimeType)
+		err = rows.Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.ThumbnailFilepath, &metadata.ThumbnailJobId, &metadata.Uploaded, &metadata.Size, &metadata.MimeType)
 		if err != nil {
 			return nil, pgxErrorToDatabaseError(err)
 		}
@@ -196,17 +207,19 @@ func (d *Database) DeletePhoto(uuid string) error {
 	return pgxErrorToDatabaseError(err)
 }
 
-func (d *Database) EnqueueJob(payload models.JobPayload) error {
+func (d *Database) EnqueueJob(payload models.JobPayload) (int, error) {
 	conn, err := d.workerPool.Acquire(context.Background())
 	if err != nil {
-		return pgxErrorToDatabaseError(err)
+		return -1, pgxErrorToDatabaseError(err)
 	}
 	defer conn.Release()
-	_, err = conn.Exec(context.Background(), "INSERT INTO Jobs (payload) VALUES ($1)", payload)
+
+	var jobId int
+	err = conn.QueryRow(context.Background(), "INSERT INTO Jobs (payload) VALUES ($1) RETURNING id", payload).Scan(&jobId)
 	if err != nil {
-		return pgxErrorToDatabaseError(err)
+		return -1, pgxErrorToDatabaseError(err)
 	}
-	return nil
+	return jobId, nil
 }
 
 func (d *Database) DequeueJob(batchSize int, maxRetries int) (models.Job, error) {

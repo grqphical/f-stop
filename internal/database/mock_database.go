@@ -102,6 +102,17 @@ func (m *MockDatabase) UpdatePhotoMetadataFilePath(id, filePath string) error {
 	return nil
 }
 
+func (m *MockDatabase) SetPhotoThumbnailPath(id, filePath string) error {
+	metadata, exists := m.photos[id]
+	if !exists {
+		return ErrNotFound
+	}
+	metadata.ThumbnailFilepath = filePath
+
+	m.photos[id] = metadata
+	return nil
+}
+
 func (m *MockDatabase) GetPhotoMetadataFromID(id string) (models.PhotoMetadata, error) {
 	metadata, exists := m.photos[id]
 	if !exists {
@@ -128,7 +139,7 @@ func (m *MockDatabase) DeletePhoto(id string) error {
 	return nil
 }
 
-func (m *MockDatabase) EnqueueJob(payload models.JobPayload) error { return nil }
+func (m *MockDatabase) EnqueueJob(payload models.JobPayload) (int, error) { return -1, nil }
 func (m *MockDatabase) DequeueJob(batch_size int, max_retries int) (models.Job, error) {
 	return models.Job{}, nil
 }

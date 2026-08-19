@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/grqphical/f-stop/internal/database"
-	"github.com/grqphical/f-stop/internal/models"
 	"github.com/grqphical/f-stop/internal/storage"
+	"github.com/grqphical/f-stop/internal/thumbnail"
 	"github.com/grqphical/f-stop/internal/workers"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -37,11 +37,9 @@ func New() *http.Server {
 	s.si = storage.New()
 	s.wm = workers.NewWorkerManager(
 		workerCount,
-		func(payload models.JobPayload) error {
-			fmt.Printf("I got photo ID %s!\n", payload.PhotoID)
-			return nil
-		},
+		thumbnail.GenerateThumbnail,
 		s.db,
+		s.si,
 	)
 
 	httpServer := &http.Server{

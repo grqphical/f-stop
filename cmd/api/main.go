@@ -10,10 +10,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/grqphical/f-stop/internal/server"
 )
 
 func main() {
+	vips.Startup(nil)
+	defer vips.Shutdown()
+
 	s := server.New()
 
 	go func() {

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 type StorageInterface interface {
 	GetStorageLocation() string
 	StoreItem(string) string
+	StoreThumbnail(string) string
 }
 
 type Storage struct {
@@ -30,7 +32,15 @@ func New() *Storage {
 
 	_, err = os.Stat(directory)
 	if err != nil {
-		err = os.MkdirAll(directory, 0644)
+		err = os.MkdirAll(directory, 0755)
+		if err != nil {
+			log.Fatalf("os.MkdirAll: %v\n", err)
+		}
+	}
+
+	_, err = os.Stat(filepath.Join(directory, "thumbnails"))
+	if err != nil {
+		err = os.MkdirAll(filepath.Join(directory, "thumbnails"), 0755)
 		if err != nil {
 			log.Fatalf("os.MkdirAll: %v\n", err)
 		}
@@ -48,4 +58,8 @@ func (s *Storage) GetStorageLocation() string {
 // Given a filename, this function returns the fullpath where the file should be written to
 func (s *Storage) StoreItem(filename string) string {
 	return filepath.Join(s.directory, filename)
+}
+
+func (s *Storage) StoreThumbnail(photoId string) string {
+	return filepath.Join(s.directory, "thumbnails", fmt.Sprintf("%s.jpg", photoId))
 }

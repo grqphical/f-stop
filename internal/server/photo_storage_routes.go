@@ -52,7 +52,7 @@ func (s *Server) UploadPhotoHandler(c *gin.Context) {
 		return
 	}
 
-	err = s.db.EnqueueJob(models.JobPayload{
+	jobId, err := s.db.EnqueueJob(models.JobPayload{
 		PhotoID:  uuid,
 		Filepath: outputPath,
 	})
@@ -62,7 +62,8 @@ func (s *Server) UploadPhotoHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"photoId": uuid,
+		"photoId":        uuid,
+		"thumbnailJobId": jobId,
 	})
 
 }

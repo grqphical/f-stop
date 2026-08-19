@@ -6,20 +6,22 @@ import (
 
 	"github.com/grqphical/f-stop/internal/database"
 	"github.com/grqphical/f-stop/internal/models"
+	"github.com/grqphical/f-stop/internal/storage"
 )
 
 const maxRetries int = 5
 
-type WorkerFunction = func(models.JobPayload) error
+type WorkerFunction = func(models.JobPayload, database.DBInterface, storage.StorageInterface) error
 
 type WorkerManager struct {
 	workerCount      int
 	workerFunction   WorkerFunction
 	shutdownChannels []chan bool
 	db               database.DBInterface
+	si               storage.StorageInterface
 }
 
-func NewWorkerManager(workerCount int, workerFunction WorkerFunction, db database.DBInterface) *WorkerManager {
+func NewWorkerManager(workerCount int, workerFunction WorkerFunction, db database.DBInterface, si storage.StorageInterface) *WorkerManager {
 	shutdownChannels := make([]chan bool, workerCount)
 
 	wm := &WorkerManager{
@@ -27,6 +29,7 @@ func NewWorkerManager(workerCount int, workerFunction WorkerFunction, db databas
 		workerFunction,
 		shutdownChannels,
 		db,
+		si,
 	}
 
 	for i := range workerCount {
@@ -67,7 +70,7 @@ func (wm *WorkerManager) WorkerRunner(id int) {
 		}
 		log.Printf("[WORKER %d] Dequeued job with ID %d\n", id, job.ID)
 
-		err = wm.workerFunction(job.Payload)
+		err = wm.workerFunction(job.Payload, wm.db, wm.si)
 		if err != nil {
 			log.Printf("[WORKER %d] (ERROR): %v\n", id, err)
 			wm.db.AcknowledgeFailure(job.ID)
