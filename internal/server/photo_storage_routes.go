@@ -210,7 +210,7 @@ func (s *Server) StaticThumbnailHandler(c *gin.Context) {
 	}
 	defer photoFile.Close()
 
-	c.Header("Content-Type", photo.MimeType)
+	c.Header("Content-Type", "image/jpeg")
 	io.Copy(c.Writer, photoFile)
 }
 

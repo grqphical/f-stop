@@ -27,8 +27,8 @@ type JobPayload struct {
 }
 
 type Job struct {
-	ID         int        `json:"int"`
-	Status     string     `json:"string"`
+	ID         int        `json:"id"`
+	Status     string     `json:"status"`
 	Payload    JobPayload `json:"-"`
 	VisibleAt  time.Time  `json:"-"`
 	RetryCount int        `json:"-"`

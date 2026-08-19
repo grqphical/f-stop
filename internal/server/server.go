@@ -56,6 +56,7 @@ func NewMockServer() *gin.Engine {
 	s := &Server{}
 	s.db = database.NewMockDatabase()
 	s.si = storage.NewMockInterface()
+	s.wm = workers.NewWorkerManager(workerCount, thumbnail.GenerateThumbnail, s.db, s.si)
 
 	return s.GenerateRouter()
 

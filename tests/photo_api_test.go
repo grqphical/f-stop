@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/grqphical/f-stop/internal/server"
 	"github.com/stretchr/testify/assert"
@@ -41,11 +42,11 @@ func TestPhotoUpload(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 
-	var respJSON map[string]string
+	var respJSON map[string]any
 	err = json.NewDecoder(w.Body).Decode(&respJSON)
 	assert.NoError(t, err, "error occurred while decoding JSON")
 
-	photoID, exists := respJSON["photoId"]
+	photoID, exists := respJSON["photoId"].(string)
 	assert.True(t, exists, "field 'photoId' does not exist on response")
 
 	// make sure the photo's metadata is correct
@@ -85,6 +86,42 @@ func TestPhotoUpload(t *testing.T) {
 
 	assert.Equal(t, originalFileHash, hasher.Sum(nil), "file hashes do not match")
 
+	// check if a thumbnail was generated
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/jobs/%d", int(respJSON["thumbnailJobId"].(float64))), nil)
+	req.AddCookie(authorizationCookie)
+
+	// check job status until thumbnail generation is done
+	for {
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		if w.Code != http.StatusOK {
+			break
+		}
+
+		var respJSON3 map[string]any
+		err = json.NewDecoder(w.Body).Decode(&respJSON3)
+		assert.NoError(t, err, "error occurred while decoding JSON")
+		if err != nil {
+			break
+		}
+
+		if respJSON3["status"].(string) == "done" {
+			break
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/storage/thumbnails/%s.jpg", photoID), nil)
+	req.AddCookie(authorizationCookie)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "image/jpeg", w.Header().Get("Content-Type"))
 }
 
 func TestListAllPhotos(t *testing.T) {
@@ -154,11 +191,11 @@ func TestPhotoDeletion(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 
-	var respJSON map[string]string
+	var respJSON map[string]any
 	err := json.NewDecoder(w.Body).Decode(&respJSON)
 	assert.NoError(t, err, "error occurred while decoding JSON")
 
-	photoID, exists := respJSON["photoId"]
+	photoID, exists := respJSON["photoId"].(string)
 	assert.True(t, exists, "field 'photoId' does not exist on response")
 
 	w = httptest.NewRecorder()
