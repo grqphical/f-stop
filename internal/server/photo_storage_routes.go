@@ -56,9 +56,17 @@ func (s *Server) UploadPhotoHandler(c *gin.Context) {
 		PhotoID:  uuid,
 		Filepath: outputPath,
 	})
-
 	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
 		log.Printf("error while starting job: %v\n", err)
+		return
+	}
+
+	err = s.db.SetPhotoThumbnailJobId(uuid, jobId)
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{

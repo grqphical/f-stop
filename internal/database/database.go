@@ -155,6 +155,16 @@ func (d *Database) SetPhotoThumbnailPath(uuid string, path string) error {
 	return err
 }
 
+func (d *Database) SetPhotoThumbnailJobId(uuid string, jobId int) error {
+	conn, err := d.apiPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+	_, err = conn.Exec(context.Background(), "UPDATE Photos SET thumbnail_job_id = $1 WHERE photo_id = $2", jobId, uuid)
+	return err
+}
+
 func (d *Database) GetPhotoMetadataFromID(uuid string) (models.PhotoMetadata, error) {
 	conn, err := d.apiPool.Acquire(context.Background())
 	if err != nil {

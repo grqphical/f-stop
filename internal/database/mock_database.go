@@ -113,6 +113,17 @@ func (m *MockDatabase) SetPhotoThumbnailPath(id, filePath string) error {
 	return nil
 }
 
+func (m *MockDatabase) SetPhotoThumbnailJobId(id string, jobId int) error {
+	metadata, exists := m.photos[id]
+	if !exists {
+		return ErrNotFound
+	}
+	metadata.ThumbnailJobId = &jobId
+
+	m.photos[id] = metadata
+	return nil
+}
+
 func (m *MockDatabase) GetPhotoMetadataFromID(id string) (models.PhotoMetadata, error) {
 	metadata, exists := m.photos[id]
 	if !exists {
