@@ -65,6 +65,7 @@ func (wm *WorkerManager) WorkerRunner(id int) {
 			log.Printf("[WORKER %d] (ERROR): %v\n", id, err)
 			continue
 		}
+		log.Printf("[WORKER %d] Dequeued job with ID %d\n", id, job.ID)
 
 		err = wm.workerFunction(job.Payload)
 		if err != nil {

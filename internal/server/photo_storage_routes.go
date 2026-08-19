@@ -52,6 +52,15 @@ func (s *Server) UploadPhotoHandler(c *gin.Context) {
 		return
 	}
 
+	err = s.db.EnqueueJob(models.JobPayload{
+		PhotoID:  uuid,
+		Filepath: outputPath,
+	})
+
+	if err != nil {
+		log.Printf("error while starting job: %v\n", err)
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
 		"photoId": uuid,
 	})
