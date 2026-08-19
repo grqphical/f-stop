@@ -213,7 +213,17 @@ func (d *Database) DeletePhoto(uuid string) error {
 		return pgxErrorToDatabaseError(err)
 	}
 	defer conn.Release()
+
+	metadata, err := d.GetPhotoMetadataFromID(uuid)
+	if err != nil {
+		return err
+	}
+
+	os.Remove(metadata.Filepath)
+	os.Remove(metadata.ThumbnailFilepath)
+
 	_, err = conn.Exec(context.Background(), "DELETE FROM Photos WHERE photo_id = $1", uuid)
+
 	return pgxErrorToDatabaseError(err)
 }
 
