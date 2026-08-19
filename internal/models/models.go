@@ -18,3 +18,18 @@ type PhotoMetadata struct {
 	MimeType  string    `json:"mimeType"`
 	Permalink string    `json:"permalink"`
 }
+
+type JobPayload struct {
+	Filepath string `json:"photoFilepath"`
+	PhotoID  string `json:"photoID"`
+}
+
+type Job struct {
+	ID         int        `json:"int"`
+	Status     string     `json:"string"`
+	Payload    JobPayload `json:"payload"`
+	VisibleAt  time.Time  `json:"visibleAt"`
+	RetryCount int        `json:"retryCount"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	UpdatedAt  time.Time  `json:"updatedAt"`
+}

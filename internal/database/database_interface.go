@@ -15,4 +15,9 @@ type DBInterface interface {
 	GetPhotoMetadataFromID(string) (models.PhotoMetadata, error)
 	GetUserPhotos(int) ([]models.PhotoMetadata, error)
 	DeletePhoto(string) error
+
+	EnqueueJob(payload models.JobPayload) error
+	DequeueJob(batch_size int) (models.Job, error)
+	AcknowledgeSuccess(job_id int) error
+	AcknowledgeFailure(job_id int) error
 }

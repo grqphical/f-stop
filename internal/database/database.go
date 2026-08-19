@@ -144,3 +144,56 @@ func (d *Database) DeletePhoto(uuid string) error {
 	_, err := d.conn.Exec(context.Background(), "DELETE FROM Photos WHERE photo_id = $1", uuid)
 	return pgxErrorToDatabaseError(err)
 }
+
+func (d *Database) EnqueueJob(payload models.JobPayload) error {
+	_, err := d.conn.Exec(context.Background(), "INSERT INTO Jobs (payload) VALUES ($1)", payload)
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	return nil
+}
+
+func (d *Database) DequeueJob(batch_size int) (models.Job, error) {
+	var job models.Job
+	err := d.conn.QueryRow(context.Background(), `WITH next_job AS (
+    SELECT id
+    FROM jobs
+    WHERE
+        retry_count < :max_retries
+        AND (
+            status = 'pending'
+            OR (status = 'in_progress' AND visible_at <= now())
+        )
+    ORDER BY created_at
+    LIMIT :batch_size
+    FOR UPDATE SKIP LOCKED
+)
+UPDATE jobs
+SET status = 'in_progress',
+    updated_at = now(),
+    visible_at = now() + interval '60 seconds',
+    retry_count = retry_count + 1
+FROM next_job
+WHERE jobs.id = next_job.id
+RETURNING jobs.*;`).
+		Scan(&job.ID, &job.Status, &job.Payload, &job.VisibleAt, &job.RetryCount, &job.CreatedAt, &job.UpdatedAt)
+
+	return job, pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) AcknowledgeSuccess(job_id int) error {
+	_, err := d.conn.Exec(context.Background(), `UPDATE jobs
+SET status = 'done',
+    updated_at = now()
+WHERE id = :job_id;`)
+
+	return pgxErrorToDatabaseError(err)
+}
+func (d *Database) AcknowledgeFailure(job_id int) error {
+	_, err := d.conn.Exec(context.Background(), `UPDATE jobs
+SET status = 'failed',
+    updated_at = now()
+WHERE id = :job_id;`)
+
+	return pgxErrorToDatabaseError(err)
+}
