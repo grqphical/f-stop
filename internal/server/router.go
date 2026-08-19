@@ -20,6 +20,7 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/storage/:filename", s.Authorization(), s.StaticPhotoHandler)
+	router.GET("/storage/thumbnails/:filename", s.Authorization(), s.StaticThumbnailHandler)
 
 	api := router.Group("/api")
 	v1 := api.Group("/v1")
@@ -32,6 +33,8 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	v1.GET("/photo/:id", s.Authorization(), s.GetPhotoHandler)
 	v1.DELETE("/photo/:id", s.Authorization(), s.DeletePhotoHandler)
 	v1.GET("/photo/all", s.Authorization(), s.GetUserPhotosHandler)
+
+	v1.GET("/jobs/:id", s.Authorization(), s.GetJobHandler)
 
 	return router
 }

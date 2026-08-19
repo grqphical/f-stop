@@ -12,7 +12,15 @@ type DBInterface interface {
 
 	CreatePhotoMetadata(int64, string, int) (string, error)
 	UpdatePhotoMetadataFilePath(string, string) error
+	SetPhotoThumbnailPath(string, string) error
+	SetPhotoThumbnailJobId(string, int) error
 	GetPhotoMetadataFromID(string) (models.PhotoMetadata, error)
 	GetUserPhotos(int) ([]models.PhotoMetadata, error)
 	DeletePhoto(string) error
+
+	EnqueueJob(payload models.JobPayload) (int, error)
+	DequeueJob(batch_size int, max_retries int) (models.Job, error)
+	AcknowledgeSuccess(job_id int) error
+	AcknowledgeFailure(job_id int) error
+	GetJob(job_id int) (models.Job, error)
 }

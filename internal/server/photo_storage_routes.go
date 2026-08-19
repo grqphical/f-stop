@@ -52,8 +52,26 @@ func (s *Server) UploadPhotoHandler(c *gin.Context) {
 		return
 	}
 
+	jobId, err := s.db.EnqueueJob(models.JobPayload{
+		PhotoID:  uuid,
+		Filepath: outputPath,
+	})
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error while starting job: %v\n", err)
+		return
+	}
+
+	err = s.db.SetPhotoThumbnailJobId(uuid, jobId)
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
-		"photoId": uuid,
+		"photoId":        uuid,
+		"thumbnailJobId": jobId,
 	})
 
 }
@@ -146,6 +164,53 @@ func (s *Server) StaticPhotoHandler(c *gin.Context) {
 	defer photoFile.Close()
 
 	c.Header("Content-Type", photo.MimeType)
+	io.Copy(c.Writer, photoFile)
+}
+
+// Handler in charge of serving the actual thumbnail files
+func (s *Server) StaticThumbnailHandler(c *gin.Context) {
+	filename := c.Param("filename")
+	id := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	photo, err := s.db.GetPhotoMetadataFromID(id)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
+		fmt.Printf("error: %v\n", err)
+		return
+	}
+
+	// make sure photo actually belongs to the user
+	userVal, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	user := userVal.(models.User)
+
+	if user.ID != photo.OwnerID {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+
+	}
+
+	if photo.ThumbnailFilepath == "" {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	photoFile, err := os.Open(photo.ThumbnailFilepath)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		fmt.Printf("error: %v\n", err)
+		return
+	}
+	defer photoFile.Close()
+
+	c.Header("Content-Type", "image/jpeg")
 	io.Copy(c.Writer, photoFile)
 }
 

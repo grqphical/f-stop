@@ -10,11 +10,28 @@ type User struct {
 }
 
 type PhotoMetadata struct {
-	ID        string    `json:"id"`
-	OwnerID   int       `json:"ownerID"`
-	Filepath  string    `json:"-"`
-	Uploaded  time.Time `json:"uploaded"`
-	Size      int       `json:"size"`
-	MimeType  string    `json:"mimeType"`
-	Permalink string    `json:"permalink"`
+	ID                string    `json:"id"`
+	OwnerID           int       `json:"ownerID"`
+	Filepath          string    `json:"-"`
+	ThumbnailFilepath string    `json:"-"`
+	ThumbnailJobId    *int      `json:"thumbnailJobId"`
+	Uploaded          time.Time `json:"uploaded"`
+	Size              int       `json:"size"`
+	MimeType          string    `json:"mimeType"`
+	Permalink         string    `json:"permalink"`
+}
+
+type JobPayload struct {
+	Filepath string `json:"photoFilepath"`
+	PhotoID  string `json:"photoID"`
+}
+
+type Job struct {
+	ID         int        `json:"id"`
+	Status     string     `json:"status"`
+	Payload    JobPayload `json:"-"`
+	VisibleAt  time.Time  `json:"-"`
+	RetryCount int        `json:"-"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	UpdatedAt  time.Time  `json:"updatedAt"`
 }

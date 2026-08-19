@@ -27,6 +27,8 @@ jobs:
         run: |
           go mod download
           go mod verify
+          apt update -y
+          apt install pkg-config libvips-dev -y
 
       - name: Build the Application
         run: go build -v ./cmd/api
