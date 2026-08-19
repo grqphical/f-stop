@@ -167,6 +167,53 @@ func (s *Server) StaticPhotoHandler(c *gin.Context) {
 	io.Copy(c.Writer, photoFile)
 }
 
+// Handler in charge of serving the actual thumbnail files
+func (s *Server) StaticThumbnailHandler(c *gin.Context) {
+	filename := c.Param("filename")
+	id := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	photo, err := s.db.GetPhotoMetadataFromID(id)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
+		fmt.Printf("error: %v\n", err)
+		return
+	}
+
+	// make sure photo actually belongs to the user
+	userVal, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	user := userVal.(models.User)
+
+	if user.ID != photo.OwnerID {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+
+	}
+
+	if photo.ThumbnailFilepath == "" {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	photoFile, err := os.Open(photo.ThumbnailFilepath)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		fmt.Printf("error: %v\n", err)
+		return
+	}
+	defer photoFile.Close()
+
+	c.Header("Content-Type", photo.MimeType)
+	io.Copy(c.Writer, photoFile)
+}
+
 func (s *Server) DeletePhotoHandler(c *gin.Context) {
 	id := c.Param("id")
 

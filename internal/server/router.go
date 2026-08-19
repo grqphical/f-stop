@@ -20,6 +20,7 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/storage/:filename", s.Authorization(), s.StaticPhotoHandler)
+	router.GET("/storage/thumbnails/:filename", s.Authorization(), s.StaticThumbnailHandler)
 
 	api := router.Group("/api")
 	v1 := api.Group("/v1")
