@@ -1,6 +1,10 @@
 package database
 
-import "github.com/grqphical/f-stop/internal/models"
+import (
+	"time"
+
+	"github.com/grqphical/f-stop/internal/models"
+)
 
 // Generic interface that allows a mock database to be used for integration tests
 type DBInterface interface {
@@ -14,6 +18,7 @@ type DBInterface interface {
 	UpdatePhotoMetadataFilePath(string, string) error
 	SetPhotoThumbnailPath(string, string) error
 	SetPhotoThumbnailJobId(string, int) error
+	SetPhotoEXIFData(string, *float64, *float64, *time.Time, *string) error
 	GetPhotoMetadataFromID(string) (models.PhotoMetadata, error)
 	GetUserPhotos(int) ([]models.PhotoMetadata, error)
 	DeletePhoto(string) error

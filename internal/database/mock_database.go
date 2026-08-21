@@ -128,6 +128,24 @@ func (m *MockDatabase) SetPhotoThumbnailJobId(id string, jobId int) error {
 	return nil
 }
 
+func (m *MockDatabase) SetPhotoEXIFData(uuid string, latitude *float64, longitude *float64, takenAt *time.Time, cameraModel *string) error {
+
+	metadata, exists := m.photos[uuid]
+	if !exists {
+		return ErrNotFound
+	}
+
+	metadata.EXIFCoordinates = models.GPSCoordinates{
+		Latitude:  latitude,
+		Longitude: longitude,
+	}
+	metadata.EXIFTakenAt = takenAt
+	metadata.EXIFCameraModel = cameraModel
+
+	m.photos[uuid] = metadata
+	return nil
+}
+
 func (m *MockDatabase) GetPhotoMetadataFromID(id string) (models.PhotoMetadata, error) {
 	metadata, exists := m.photos[id]
 	if !exists {

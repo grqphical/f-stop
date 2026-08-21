@@ -165,6 +165,18 @@ func (d *Database) SetPhotoThumbnailJobId(uuid string, jobId int) error {
 	return err
 }
 
+func (d *Database) SetPhotoEXIFData(uuid string, latitude *float64, longitude *float64, takenAt *time.Time, cameraModel *string) error {
+	conn, err := d.apiPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(context.Background(), "UPDATE Photos SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326), taken_timestamp = $3, camera_model = $4 WHERE photo_id = $5",
+		longitude, latitude, takenAt, cameraModel, uuid)
+	return pgxErrorToDatabaseError(err)
+}
+
 func (d *Database) GetPhotoMetadataFromID(uuid string) (models.PhotoMetadata, error) {
 	conn, err := d.apiPool.Acquire(context.Background())
 	if err != nil {
@@ -172,8 +184,13 @@ func (d *Database) GetPhotoMetadataFromID(uuid string) (models.PhotoMetadata, er
 	}
 	defer conn.Release()
 	var metadata models.PhotoMetadata
-	err = conn.QueryRow(context.Background(), "SELECT * FROM Photos WHERE photo_id = $1", uuid).
-		Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.ThumbnailFilepath, &metadata.ThumbnailJobId, &metadata.Uploaded, &metadata.Size, &metadata.MimeType)
+	err = conn.QueryRow(context.Background(), `SELECT 
+			photo_id, owner_id, filepath, thumbnail_filepath, thumbnail_job_id, uploaded_timestamp, size, mime_type, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, taken_timestamp, camera_model
+		FROM Photos WHERE photo_id = $1`, uuid).
+		Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.ThumbnailFilepath,
+			&metadata.ThumbnailJobId, &metadata.Uploaded, &metadata.Size, &metadata.MimeType,
+			&metadata.EXIFCoordinates.Latitude, &metadata.EXIFCoordinates.Longitude,
+			&metadata.EXIFTakenAt, &metadata.EXIFCameraModel)
 
 	metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(metadata.Filepath))
 

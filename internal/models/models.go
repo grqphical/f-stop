@@ -9,6 +9,11 @@ type User struct {
 	Email        string `json:"email"`
 }
 
+type GPSCoordinates struct {
+	Latitude  *float64 `json:"latitude"`
+	Longitude *float64 `json:"longitude"`
+}
+
 type PhotoMetadata struct {
 	ID                string    `json:"id"`
 	OwnerID           int       `json:"ownerID"`
@@ -19,6 +24,10 @@ type PhotoMetadata struct {
 	Size              int       `json:"size"`
 	MimeType          string    `json:"mimeType"`
 	Permalink         string    `json:"permalink"`
+
+	EXIFCoordinates GPSCoordinates `json:"exifCoordinates"`
+	EXIFCameraModel *string        `json:"exifCameraModel"`
+	EXIFTakenAt     *time.Time     `json:"exifTakenAt"`
 }
 
 type JobPayload struct {

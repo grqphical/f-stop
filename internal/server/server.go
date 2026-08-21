@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/grqphical/f-stop/internal/database"
 	"github.com/grqphical/f-stop/internal/storage"
-	"github.com/grqphical/f-stop/internal/thumbnail"
 	"github.com/grqphical/f-stop/internal/workers"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -37,7 +36,7 @@ func New() *http.Server {
 	s.si = storage.New()
 	s.wm = workers.NewWorkerManager(
 		workerCount,
-		thumbnail.GenerateThumbnail,
+		workers.ImageProcessingWorker,
 		s.db,
 		s.si,
 	)
@@ -56,7 +55,7 @@ func NewMockServer() *gin.Engine {
 	s := &Server{}
 	s.db = database.NewMockDatabase()
 	s.si = storage.NewMockInterface()
-	s.wm = workers.NewWorkerManager(workerCount, thumbnail.GenerateThumbnail, s.db, s.si)
+	s.wm = workers.NewWorkerManager(workerCount, workers.ImageProcessingWorker, s.db, s.si)
 
 	return s.GenerateRouter()
 
