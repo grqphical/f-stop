@@ -28,4 +28,15 @@ type DBInterface interface {
 	AcknowledgeSuccess(job_id int) error
 	AcknowledgeFailure(job_id int) error
 	GetJob(job_id int) (models.Job, error)
+
+	CreateTag(name string, ownerId int) (int, error)
+	GetTagByName(name string) (models.Tag, error)
+	GetTagByID(id int) (models.Tag, error)
+	GetUserTags(ownerId int) ([]models.Tag, error)
+	RenameTag(tagId int, newName string)
+	DeleteTag(name string) error
+
+	AssignPhotoTag(tag string, photoId string) error
+	RemovePhotoTag(tag string, photoId string) error
+	GetPhotoTags(photoId string) ([]models.Tag, error)
 }

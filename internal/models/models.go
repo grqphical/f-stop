@@ -44,3 +44,14 @@ type Job struct {
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
 }
+
+type Tag struct {
+	ID      int    `json:"id"`
+	OwnerID int    `json:"ownerID"`
+	Name    string `json:"name"`
+}
+
+type TagAssignment struct {
+	PhotoID string `json:"photoId"`
+	TagID   string `json:"tagID"`
+}

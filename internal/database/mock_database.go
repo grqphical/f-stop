@@ -237,3 +237,39 @@ func (m *MockDatabase) GetJob(jobId int) (models.Job, error) {
 
 	return job, nil
 }
+
+func (m *MockDatabase) CreateTag(name string, ownerId int) (int, error) {
+	return 0, nil
+}
+
+func (m *MockDatabase) GetTagByName(name string, ownerId int) (models.Tag, error) {
+	return models.Tag{}, nil
+}
+
+func (m *MockDatabase) GetTagByID(id int) (models.Tag, error) {
+	return models.Tag{}, nil
+}
+
+func (m *MockDatabase) GetUserTags(ownerId int) ([]models.Tag, error) {
+	return nil, nil
+}
+
+func (m *MockDatabase) RenameTag(tagId int, newName string) error {
+	return nil
+}
+
+func (m *MockDatabase) DeleteTag(tagId int) error {
+	return nil
+}
+
+func (m *MockDatabase) AssignPhotoTag(tagId int, photoId string) error {
+	return nil
+}
+
+func (m *MockDatabase) RemovePhotoTag(tagId int, photoId string) error {
+	return nil
+}
+
+func (m *MockDatabase) GetPhotoTags(photoId string) ([]models.Tag, error) {
+	return nil, nil
+}

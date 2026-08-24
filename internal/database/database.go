@@ -340,3 +340,148 @@ func (d *Database) GetJob(job_id int) (models.Job, error) {
 
 	return job, pgxErrorToDatabaseError(err)
 }
+
+func (d *Database) CreateTag(name string, ownerId int) (int, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return -1, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	var tagId int
+	err = conn.QueryRow(context.Background(), "INSERT INTO Tags (owner_id, name) VALUES ($1, $2) RETURNING id", ownerId, name).Scan(&tagId)
+	if err != nil {
+		return -1, pgxErrorToDatabaseError(err)
+	}
+
+	return tagId, nil
+}
+
+func (d *Database) GetTagByName(name string, ownerId int) (models.Tag, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return models.Tag{}, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	var tag models.Tag
+	err = conn.QueryRow(context.Background(), "SELECT * FROM Tags WHERE name = $1 AND ownerId = $2", name, ownerId).
+		Scan(&tag.ID, &tag.OwnerID, &tag.Name)
+
+	return tag, pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) GetTagByID(id int) (models.Tag, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return models.Tag{}, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	var tag models.Tag
+	err = conn.QueryRow(context.Background(), "SELECT * FROM Tags WHERE id = $1", id).
+		Scan(&tag.ID, &tag.OwnerID, &tag.Name)
+
+	return tag, pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) GetUserTags(ownerId int) ([]models.Tag, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	var tags []models.Tag = make([]models.Tag, 0)
+
+	rows, err := conn.Query(context.Background(), "SELECT * FROM Tags WHERE owner_id = $1", ownerId)
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+
+	for rows.Next() {
+		var tag models.Tag
+		err = rows.Scan(&tag.ID, &tag.OwnerID, &tag.Name)
+		if err != nil {
+			return nil, pgxErrorToDatabaseError(err)
+		}
+
+		tags = append(tags, tag)
+	}
+
+	return tags, nil
+}
+
+func (d *Database) RenameTag(tagId int, newName string) error {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(context.Background(), "UPDATE Tags SET name = $1 WHERE id = $2", newName, tagId)
+	return pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) DeleteTag(tagId int) error {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(context.Background(), "DELETE FROM Tags WHERE id = $1", tagId)
+	return pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) AssignPhotoTag(tagId int, photoId string) error {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(context.Background(), "INSERT INTO TagAssignments (photo_id, tag_id) VALUES ($1, $2)", photoId, tagId)
+	return pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) RemovePhotoTag(tagId int, photoId string) error {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(context.Background(), "DELETE FROM TagAssignments WHERE photo_id = $1 AND tag_id = $2", photoId, tagId)
+	return pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) GetPhotoTags(photoId string) ([]models.Tag, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	rows, err := conn.Query(context.Background(), `SELECT *
+FROM tags t
+JOIN photo_tags pt ON pt.tag_id = t.id
+WHERE pt.photo_id = $1;`, photoId)
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+
+	var tags []models.Tag
+	for rows.Next() {
+		var tag models.Tag
+		err = rows.Scan(&tag.ID, &tag.OwnerID, &tag.Name)
+		if err != nil {
+			return nil, pgxErrorToDatabaseError(err)
+		}
+
+		tags = append(tags, tag)
+	}
+
+	return tags, nil
+
+}
