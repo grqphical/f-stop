@@ -87,15 +87,29 @@ func (s *Server) GetTagByIDHandler(c *gin.Context) {
 }
 
 func (s *Server) DeleteTagHandler(c *gin.Context) {
-	_, exists := c.Get("user")
+	userVal, exists := c.Get("user")
 	if !exists {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
+	user := userVal.(models.User)
+
 	tagID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		httpError(c, http.StatusBadRequest, "InvalidID", "ID must be a positive integer")
+		return
+	}
+
+	tag, err := s.db.GetTagByID(tagID)
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	if tag.OwnerID != user.ID {
+		httpError(c, http.StatusUnauthorized, "Unauthorized", "You are not authorized to do this")
 		return
 	}
 
