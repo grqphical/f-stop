@@ -123,3 +123,42 @@ func (s *Server) DeleteTagHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{})
 }
+
+func (s *Server) RenameTagHandler(c *gin.Context) {
+	userVal, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	user := userVal.(models.User)
+
+	tagID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		httpError(c, http.StatusBadRequest, "InvalidID", "ID must be a positive integer")
+		return
+	}
+
+	newName := c.PostForm("name")
+
+	tag, err := s.db.GetTagByID(tagID)
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	if tag.OwnerID != user.ID {
+		httpError(c, http.StatusUnauthorized, "Unauthorized", "You are not authorized to do this")
+		return
+	}
+
+	err = s.db.RenameTag(tagID, newName)
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{})
+}

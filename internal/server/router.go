@@ -33,6 +33,7 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	v1.POST("/tags", s.Authorization(), s.CreateTagHandler)
 	v1.GET("/tags/:id", s.Authorization(), s.GetTagByIDHandler)
 	v1.DELETE("/tags/:id", s.Authorization(), s.DeleteTagHandler)
+	v1.PUT("/tags/:id", s.Authorization(), s.RenameTagHandler)
 
 	v1.PUT("/photo", s.Authorization(), s.UploadPhotoHandler)
 	v1.GET("/photo/:id", s.Authorization(), s.GetPhotoHandler)
