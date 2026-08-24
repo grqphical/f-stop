@@ -365,7 +365,7 @@ func (d *Database) GetTagByName(name string, ownerId int) (models.Tag, error) {
 	defer conn.Release()
 
 	var tag models.Tag
-	err = conn.QueryRow(context.Background(), "SELECT * FROM Tags WHERE name = $1 AND ownerId = $2", name, ownerId).
+	err = conn.QueryRow(context.Background(), "SELECT * FROM Tags WHERE name = $1 AND owner_id = $2", name, ownerId).
 		Scan(&tag.ID, &tag.OwnerID, &tag.Name)
 
 	return tag, pgxErrorToDatabaseError(err)

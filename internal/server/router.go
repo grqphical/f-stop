@@ -29,6 +29,9 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	v1.POST("/login", s.LoginHandler)
 	v1.GET("/user", s.Authorization(), s.GetUserHandler)
 
+	v1.GET("/tags/names/:name", s.Authorization(), s.GetTagByNameHandler)
+	v1.POST("/tags", s.Authorization(), s.CreateTagHandler)
+
 	v1.PUT("/photo", s.Authorization(), s.UploadPhotoHandler)
 	v1.GET("/photo/:id", s.Authorization(), s.GetPhotoHandler)
 	v1.DELETE("/photo/:id", s.Authorization(), s.DeletePhotoHandler)

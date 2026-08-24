@@ -30,13 +30,13 @@ type DBInterface interface {
 	GetJob(job_id int) (models.Job, error)
 
 	CreateTag(name string, ownerId int) (int, error)
-	GetTagByName(name string) (models.Tag, error)
+	GetTagByName(name string, ownerId int) (models.Tag, error)
 	GetTagByID(id int) (models.Tag, error)
 	GetUserTags(ownerId int) ([]models.Tag, error)
-	RenameTag(tagId int, newName string)
-	DeleteTag(name string) error
+	RenameTag(tagId int, newName string) error
+	DeleteTag(tagId int) error
 
-	AssignPhotoTag(tag string, photoId string) error
-	RemovePhotoTag(tag string, photoId string) error
+	AssignPhotoTag(tagId int, photoId string) error
+	RemovePhotoTag(tagId int, photoId string) error
 	GetPhotoTags(photoId string) ([]models.Tag, error)
 }
