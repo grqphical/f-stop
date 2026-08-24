@@ -16,4 +16,4 @@ go build -o f-stop ./cmd/api
 ```
 
 ## License
-f-stop is licensed under the [Apache 2.0 License](LICENSE)
+f-stop is licensed under the [Apache 2.0 License](LICENSE). f-stop uses [libvips](https://www.libvips.org/) which is licensed under the [GNU Lesser General Public License v2.1 or later](https://spdx.org/licenses/LGPL-2.1-or-later).
