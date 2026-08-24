@@ -16,6 +16,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Sudo fallback # Github/ForgeJo compatibility layer
+        run: |
+          if [ "$(id -u)" -eq 0 ] && ! command -v sudo &> /dev/null; then
+            echo '#!/bin/sh' > /usr/local/bin/sudo
+            echo 'exec "$@"' >> /usr/local/bin/sudo
+            chmod +x /usr/local/bin/sudo
+          fi
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -27,8 +35,8 @@ jobs:
         run: |
           go mod download
           go mod verify
-          apt update -y
-          apt install pkg-config libvips-dev -y
+          sudo apt update -y
+          sudo apt install pkg-config libvips-dev -y
 
       - name: Build the Application
         run: go build -v ./cmd/api
