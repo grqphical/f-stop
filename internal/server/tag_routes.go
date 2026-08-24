@@ -86,6 +86,27 @@ func (s *Server) GetTagByIDHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, tag)
 }
 
+func (s *Server) GetUserTagsHandler(c *gin.Context) {
+	userVal, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	user := userVal.(models.User)
+
+	tags, err := s.db.GetUserTags(user.ID)
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tags": tags,
+	})
+}
+
 func (s *Server) DeleteTagHandler(c *gin.Context) {
 	userVal, exists := c.Get("user")
 	if !exists {
