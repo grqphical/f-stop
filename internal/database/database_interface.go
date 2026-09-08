@@ -9,6 +9,7 @@ import (
 // Generic interface that allows a mock database to be used for integration tests
 type DBInterface interface {
 	Close()
+	Health() error
 
 	CreateUser(string, string, string) (models.User, error)
 	GetUserByEmail(string) (models.User, error)

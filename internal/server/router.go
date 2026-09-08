@@ -1,7 +1,11 @@
 package server
 
 import (
+	"errors"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
+	"github.com/grqphical/f-stop/internal/database"
 )
 
 type HTTPError struct {
@@ -21,6 +25,8 @@ func (s *Server) GenerateRouter() *gin.Engine {
 
 	router.GET("/storage/:filename", s.Authorization(), s.StaticPhotoHandler)
 	router.GET("/storage/thumbnails/:filename", s.Authorization(), s.StaticThumbnailHandler)
+
+	router.GET("/health", s.HealthHandler)
 
 	api := router.Group("/api")
 	v1 := api.Group("/v1")
@@ -44,4 +50,17 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	v1.GET("/jobs/:id", s.Authorization(), s.GetJobHandler)
 
 	return router
+}
+
+func (s *Server) HealthHandler(c *gin.Context) {
+	err := s.db.Health()
+	if errors.Is(err, database.ErrDBDown) {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Database down",
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "Up",
+	})
 }

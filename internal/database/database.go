@@ -63,6 +63,14 @@ func (d *Database) Close() {
 	d.workerPool.Close()
 }
 
+func (d *Database) Health() error {
+	if d.apiPool.Ping(context.Background()) != nil {
+		return ErrDBDown
+	}
+
+	return nil
+}
+
 func (d *Database) CreateUser(username string, email string, password string) (models.User, error) {
 	conn, err := d.apiPool.Acquire(context.Background())
 	if err != nil {

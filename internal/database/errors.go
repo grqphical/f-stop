@@ -5,4 +5,5 @@ import "errors"
 var (
 	ErrUniqueConstraint = errors.New("unique constraint failed")
 	ErrNotFound         = errors.New("not found")
+	ErrDBDown           = errors.New("database down")
 )

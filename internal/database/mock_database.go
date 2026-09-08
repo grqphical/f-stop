@@ -31,6 +31,10 @@ func NewMockDatabase() *MockDatabase {
 
 func (m *MockDatabase) Close() {}
 
+func (m *MockDatabase) Health() error {
+	return nil
+}
+
 func (m *MockDatabase) CreateUser(username string, email string, password string) (models.User, error) {
 	for _, user := range m.users {
 		if user.Email == email || user.Username == username {
