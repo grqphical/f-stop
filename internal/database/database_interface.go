@@ -37,7 +37,7 @@ type DBInterface interface {
 	RenameTag(tagId int, newName string) error
 	DeleteTag(tagId int) error
 
-	AssignPhotoTag(tagId int, photoId string) error
+	AssignPhotoTags(tagIDs []int, photoId string) error
 	RemovePhotoTag(tagId int, photoId string) error
 	GetPhotoTags(photoId string) ([]models.Tag, error)
 }

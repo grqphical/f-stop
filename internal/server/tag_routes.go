@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -182,4 +183,54 @@ func (s *Server) RenameTagHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{})
+}
+
+func (s *Server) AssignTagHandler(c *gin.Context) {
+	_, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	c.Header("Accept", "application/json")
+
+	photoID := c.Param("id")
+
+	var payload models.TagAssigmentPayload
+	err := json.NewDecoder(c.Request.Body).Decode(&payload)
+	if err != nil {
+		httpError(c, http.StatusBadRequest, "InvalidRequest", "Your request had an invalid structure")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	err = s.db.AssignPhotoTags(payload.Tags, photoID)
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+}
+
+func (s *Server) GetPhotoTagsHandler(c *gin.Context) {
+	_, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	c.Header("Content-Type", "application/json")
+
+	photoID := c.Param("id")
+
+	tags, err := s.db.GetPhotoTags(photoID)
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tags": tags,
+	})
 }

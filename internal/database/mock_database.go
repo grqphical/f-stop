@@ -266,7 +266,7 @@ func (m *MockDatabase) DeleteTag(tagId int) error {
 	return nil
 }
 
-func (m *MockDatabase) AssignPhotoTag(tagId int, photoId string) error {
+func (m *MockDatabase) AssignPhotoTags(tagIds []int, photoId string) error {
 	return nil
 }
 

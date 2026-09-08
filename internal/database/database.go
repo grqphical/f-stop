@@ -443,15 +443,26 @@ func (d *Database) DeleteTag(tagId int) error {
 	return pgxErrorToDatabaseError(err)
 }
 
-func (d *Database) AssignPhotoTag(tagId int, photoId string) error {
+func (d *Database) AssignPhotoTags(tagIds []int, photoId string) error {
 	conn, err := d.workerPool.Acquire(context.Background())
 	if err != nil {
 		return pgxErrorToDatabaseError(err)
 	}
 	defer conn.Release()
 
-	_, err = conn.Exec(context.Background(), "INSERT INTO TagAssignments (photo_id, tag_id) VALUES ($1, $2)", photoId, tagId)
-	return pgxErrorToDatabaseError(err)
+	tx, err := conn.Begin(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+
+	for _, tagId := range tagIds {
+		_, err = tx.Exec(context.Background(), "INSERT INTO TagAssignments (photo_id, tag_id) VALUES ($1, $2)", photoId, tagId)
+		if err != nil {
+			return pgxErrorToDatabaseError(err)
+		}
+	}
+
+	return pgxErrorToDatabaseError(tx.Commit(context.Background()))
 }
 
 func (d *Database) RemovePhotoTag(tagId int, photoId string) error {
@@ -473,8 +484,8 @@ func (d *Database) GetPhotoTags(photoId string) ([]models.Tag, error) {
 	defer conn.Release()
 
 	rows, err := conn.Query(context.Background(), `SELECT *
-FROM tags t
-JOIN photo_tags pt ON pt.tag_id = t.id
+FROM Tags t
+JOIN TagAssignments pt ON pt.tag_id = t.id
 WHERE pt.photo_id = $1;`, photoId)
 	if err != nil {
 		return nil, pgxErrorToDatabaseError(err)
@@ -483,7 +494,7 @@ WHERE pt.photo_id = $1;`, photoId)
 	var tags []models.Tag
 	for rows.Next() {
 		var tag models.Tag
-		err = rows.Scan(&tag.ID, &tag.OwnerID, &tag.Name)
+		err = rows.Scan(&tag.ID, &tag.OwnerID, &tag.Name, nil, nil)
 		if err != nil {
 			return nil, pgxErrorToDatabaseError(err)
 		}

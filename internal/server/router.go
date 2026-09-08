@@ -46,6 +46,8 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	v1.GET("/photo/:id", s.Authorization(), s.GetPhotoHandler)
 	v1.DELETE("/photo/:id", s.Authorization(), s.DeletePhotoHandler)
 	v1.GET("/photo/all", s.Authorization(), s.GetUserPhotosHandler)
+	v1.PATCH("/photo/:id/tags", s.Authorization(), s.AssignTagHandler)
+	v1.GET("/photo/:id/tags", s.Authorization(), s.GetPhotoTagsHandler)
 
 	v1.GET("/jobs/:id", s.Authorization(), s.GetJobHandler)
 

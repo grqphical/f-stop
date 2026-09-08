@@ -56,3 +56,7 @@ type TagAssignment struct {
 	PhotoID string `json:"photoId"`
 	TagID   string `json:"tagID"`
 }
+
+type TagAssigmentPayload struct {
+	Tags []int `json:"tags"`
+}
