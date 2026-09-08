@@ -201,6 +201,7 @@ func (d *Database) GetPhotoMetadataFromID(uuid string) (models.PhotoMetadata, er
 			&metadata.EXIFTakenAt, &metadata.EXIFCameraModel)
 
 	metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(metadata.Filepath))
+	metadata.ThumbnailPermalink = fmt.Sprintf("/storage/thumbnails/%s", filepath.Base(metadata.ThumbnailFilepath))
 
 	return metadata, pgxErrorToDatabaseError(err)
 }

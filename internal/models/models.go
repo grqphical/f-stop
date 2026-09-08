@@ -15,15 +15,16 @@ type GPSCoordinates struct {
 }
 
 type PhotoMetadata struct {
-	ID                string    `json:"id"`
-	OwnerID           int       `json:"ownerID"`
-	Filepath          string    `json:"-"`
-	ThumbnailFilepath string    `json:"-"`
-	ThumbnailJobId    *int      `json:"thumbnailJobId"`
-	Uploaded          time.Time `json:"uploaded"`
-	Size              int       `json:"size"`
-	MimeType          string    `json:"mimeType"`
-	Permalink         string    `json:"permalink"`
+	ID                 string    `json:"id"`
+	OwnerID            int       `json:"ownerID"`
+	Filepath           string    `json:"-"`
+	ThumbnailFilepath  string    `json:"-"`
+	ThumbnailPermalink string    `json:"thumbnailPermalink"`
+	ThumbnailJobId     *int      `json:"thumbnailJobId"`
+	Uploaded           time.Time `json:"uploaded"`
+	Size               int       `json:"size"`
+	MimeType           string    `json:"mimeType"`
+	Permalink          string    `json:"permalink"`
 
 	EXIFCoordinates GPSCoordinates `json:"exifCoordinates"`
 	EXIFCameraModel *string        `json:"exifCameraModel"`
