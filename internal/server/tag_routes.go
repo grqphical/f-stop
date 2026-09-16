@@ -210,6 +210,8 @@ func (s *Server) AssignTagHandler(c *gin.Context) {
 		log.Printf("error: %v\n", err)
 		return
 	}
+
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (s *Server) GetPhotoTagsHandler(c *gin.Context) {
@@ -233,4 +235,90 @@ func (s *Server) GetPhotoTagsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"tags": tags,
 	})
+}
+
+func (s *Server) GetTagPhotosHandler(c *gin.Context) {
+	userVal, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	user := userVal.(models.User)
+
+	tagID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		httpError(c, http.StatusBadRequest, "InvalidID", "ID must be a positive integer")
+		return
+	}
+
+	tag, err := s.db.GetTagByID(tagID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			httpError(c, http.StatusNotFound, "TagNotFound", "Tag with given ID could not be found")
+			return
+		}
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	if tag.OwnerID != user.ID {
+		httpError(c, http.StatusUnauthorized, "Unauthorized", "You are not authorized to do this")
+		return
+	}
+
+	photos, err := s.db.GetTagPhotos(tagID)
+	if err != nil {
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"photos": photos,
+	})
+}
+
+func (s *Server) RemovePhotoTagsHandler(c *gin.Context) {
+	userVal, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	user := userVal.(models.User)
+
+	photoID := c.Param("id")
+
+	photo, err := s.db.GetPhotoMetadataFromID(photoID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			httpError(c, http.StatusNotFound, "PhotoNotFound", "A photo with that ID could not be found")
+			return
+		}
+		httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	if photo.OwnerID != user.ID {
+		httpError(c, http.StatusUnauthorized, "Unauthorized", "You are not authorized to do this")
+		return
+	}
+
+	var payload models.TagAssigmentPayload
+	if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil {
+		httpError(c, http.StatusBadRequest, "InvalidRequest", "Your request had an invalid structure")
+		log.Printf("error: %v\n", err)
+		return
+	}
+
+	for _, tagID := range payload.Tags {
+		if err := s.db.RemovePhotoTag(tagID, photoID); err != nil {
+			httpError(c, http.StatusInternalServerError, "InternalServerError", "An internal server error occured")
+			log.Printf("error: %v\n", err)
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{})
 }

@@ -41,6 +41,7 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	v1.GET("/tags/:id", s.Authorization(), s.GetTagByIDHandler)
 	v1.DELETE("/tags/:id", s.Authorization(), s.DeleteTagHandler)
 	v1.PUT("/tags/:id", s.Authorization(), s.RenameTagHandler)
+	v1.GET("/tags/:id/photos", s.Authorization(), s.GetTagPhotosHandler)
 
 	v1.PUT("/photo", s.Authorization(), s.UploadPhotoHandler)
 	v1.GET("/photo/:id", s.Authorization(), s.GetPhotoHandler)
@@ -48,6 +49,7 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	v1.GET("/photo/all", s.Authorization(), s.GetUserPhotosHandler)
 	v1.PATCH("/photo/:id/tags", s.Authorization(), s.AssignTagHandler)
 	v1.GET("/photo/:id/tags", s.Authorization(), s.GetPhotoTagsHandler)
+	v1.DELETE("/photo/:id/tags", s.Authorization(), s.RemovePhotoTagsHandler)
 
 	v1.GET("/jobs/:id", s.Authorization(), s.GetJobHandler)
 

@@ -505,3 +505,41 @@ WHERE pt.photo_id = $1;`, photoId)
 	return tags, nil
 
 }
+
+func (d *Database) GetTagPhotos(tagId int) ([]models.PhotoMetadata, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	rows, err := conn.Query(context.Background(), `SELECT
+			p.photo_id, p.owner_id, p.filepath, p.thumbnail_filepath, p.thumbnail_job_id, p.uploaded_timestamp, p.size, p.mime_type,
+			ST_Y(p.location::geometry) AS latitude, ST_X(p.location::geometry) AS longitude, p.taken_timestamp, p.camera_model
+		FROM Photos p
+		JOIN TagAssignments ta ON ta.photo_id = p.photo_id
+		WHERE ta.tag_id = $1;`, tagId)
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+	defer rows.Close()
+
+	photos := make([]models.PhotoMetadata, 0)
+	for rows.Next() {
+		var metadata models.PhotoMetadata
+		err = rows.Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.ThumbnailFilepath,
+			&metadata.ThumbnailJobId, &metadata.Uploaded, &metadata.Size, &metadata.MimeType,
+			&metadata.EXIFCoordinates.Latitude, &metadata.EXIFCoordinates.Longitude,
+			&metadata.EXIFTakenAt, &metadata.EXIFCameraModel)
+		if err != nil {
+			return nil, pgxErrorToDatabaseError(err)
+		}
+
+		metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(metadata.Filepath))
+		metadata.ThumbnailPermalink = fmt.Sprintf("/storage/thumbnails/%s", filepath.Base(metadata.ThumbnailFilepath))
+
+		photos = append(photos, metadata)
+	}
+
+	return photos, pgxErrorToDatabaseError(rows.Err())
+}

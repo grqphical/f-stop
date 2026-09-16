@@ -40,4 +40,5 @@ type DBInterface interface {
 	AssignPhotoTags(tagIDs []int, photoId string) error
 	RemovePhotoTag(tagId int, photoId string) error
 	GetPhotoTags(photoId string) ([]models.Tag, error)
+	GetTagPhotos(tagId int) ([]models.PhotoMetadata, error)
 }
