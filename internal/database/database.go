@@ -407,6 +407,7 @@ func (d *Database) GetUserTags(ownerId int) ([]models.Tag, error) {
 	if err != nil {
 		return nil, pgxErrorToDatabaseError(err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var tag models.Tag
@@ -418,7 +419,7 @@ func (d *Database) GetUserTags(ownerId int) ([]models.Tag, error) {
 		tags = append(tags, tag)
 	}
 
-	return tags, nil
+	return tags, pgxErrorToDatabaseError(rows.Err())
 }
 
 func (d *Database) RenameTag(tagId int, newName string) error {
@@ -454,6 +455,7 @@ func (d *Database) AssignPhotoTags(tagIds []int, photoId string) error {
 	if err != nil {
 		return pgxErrorToDatabaseError(err)
 	}
+	defer tx.Rollback(context.Background())
 
 	for _, tagId := range tagIds {
 		_, err = tx.Exec(context.Background(), "INSERT INTO TagAssignments (photo_id, tag_id) VALUES ($1, $2)", photoId, tagId)
@@ -483,18 +485,19 @@ func (d *Database) GetPhotoTags(photoId string) ([]models.Tag, error) {
 	}
 	defer conn.Release()
 
-	rows, err := conn.Query(context.Background(), `SELECT *
+	rows, err := conn.Query(context.Background(), `SELECT t.id, t.owner_id, t.name
 FROM Tags t
 JOIN TagAssignments pt ON pt.tag_id = t.id
 WHERE pt.photo_id = $1;`, photoId)
 	if err != nil {
 		return nil, pgxErrorToDatabaseError(err)
 	}
+	defer rows.Close()
 
-	var tags []models.Tag
+	tags := make([]models.Tag, 0)
 	for rows.Next() {
 		var tag models.Tag
-		err = rows.Scan(&tag.ID, &tag.OwnerID, &tag.Name, nil, nil)
+		err = rows.Scan(&tag.ID, &tag.OwnerID, &tag.Name)
 		if err != nil {
 			return nil, pgxErrorToDatabaseError(err)
 		}
@@ -502,7 +505,7 @@ WHERE pt.photo_id = $1;`, photoId)
 		tags = append(tags, tag)
 	}
 
-	return tags, nil
+	return tags, pgxErrorToDatabaseError(rows.Err())
 
 }
 

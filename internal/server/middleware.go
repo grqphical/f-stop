@@ -25,8 +25,13 @@ func (s *Server) Authorization() gin.HandlerFunc {
 		}
 
 		// make sure user exists
-		userId := claims["sub"].(float64)
-		user, err := s.db.GetUserByID(int(userId))
+		sub, ok := claims["sub"].(float64)
+		if !ok {
+			fmt.Printf("authorization error: invalid sub claim\n")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		user, err := s.db.GetUserByID(int(sub))
 		if err != nil {
 			fmt.Printf("authorization error: %v\n", err)
 			c.AbortWithStatus(http.StatusUnauthorized)

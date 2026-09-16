@@ -303,6 +303,12 @@ func (m *MockDatabase) RenameTag(tagId int, newName string) error {
 		return ErrNotFound
 	}
 
+	for id, other := range m.tags {
+		if id != tagId && other.OwnerID == tag.OwnerID && other.Name == newName {
+			return ErrUniqueConstraint
+		}
+	}
+
 	tag.Name = newName
 	m.tags[tagId] = tag
 	return nil

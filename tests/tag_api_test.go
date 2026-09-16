@@ -174,9 +174,30 @@ func TestTagCreate(t *testing.T) {
 	tagID := createTagAssumeSuccess(t, router, authorizationCookie, "vacation")
 	assert.GreaterOrEqual(t, tagID, 0)
 
-	// unauthenticated creation fails
+	// creating a duplicate tag fails
 	w := httptest.NewRecorder()
-	req := newMultipartMethodRequest(t, http.MethodPost, "/api/v1/tags", map[string]string{"name": "noauth"})
+	req := newMultipartMethodRequest(t, http.MethodPost, "/api/v1/tags", map[string]string{"name": "vacation"})
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusConflict, w.Code)
+
+	var errJSON map[string]any
+	err := json.NewDecoder(w.Body).Decode(&errJSON)
+	assert.NoError(t, err, "error occurred while decoding JSON")
+	assert.Equal(t, "TagAlreadyExists", errJSON["errorType"])
+
+	// creating a tag without a name fails
+	w = httptest.NewRecorder()
+	req = newMultipartMethodRequest(t, http.MethodPost, "/api/v1/tags", map[string]string{})
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	// unauthenticated creation fails
+	w = httptest.NewRecorder()
+	req = newMultipartMethodRequest(t, http.MethodPost, "/api/v1/tags", map[string]string{"name": "noauth"})
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -234,6 +255,17 @@ func TestGetTagByID(t *testing.T) {
 	// unauthenticated fetch fails
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/tags/%d", tagID), nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	// another user cannot fetch the tag
+	createTestAccount(t, router, "janedoe", "janedoe@gmail.com", "IAmAPassword!")
+	janeCookie := loginWithCredentials(t, router, "janedoe@gmail.com", "IAmAPassword!")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/tags/%d", tagID), nil)
+	req.AddCookie(janeCookie)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -362,6 +394,36 @@ func TestRenameTag(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
+	// unknown ID fails
+	w = httptest.NewRecorder()
+	req = newMultipartMethodRequest(t, http.MethodPut, "/api/v1/tags/9999", map[string]string{"name": "nope"})
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	var notFoundJSON map[string]any
+	err = json.NewDecoder(w.Body).Decode(&notFoundJSON)
+	assert.NoError(t, err, "error occurred while decoding JSON")
+	assert.Equal(t, "TagNotFound", notFoundJSON["errorType"])
+
+	// renaming to a duplicate name fails
+	otherTagID := createTagAssumeSuccess(t, router, authorizationCookie, "taken")
+	w = httptest.NewRecorder()
+	req = newMultipartMethodRequest(t, http.MethodPut, fmt.Sprintf("/api/v1/tags/%d", otherTagID), map[string]string{"name": "newname"})
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusConflict, w.Code)
+
+	// renaming without a name fails
+	w = httptest.NewRecorder()
+	req = newMultipartMethodRequest(t, http.MethodPut, fmt.Sprintf("/api/v1/tags/%d", tagID), map[string]string{})
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
 	// another user cannot rename the tag
 	createTestAccount(t, router, "janedoe", "janedoe@gmail.com", "IAmAPassword!")
 	janeCookie := loginWithCredentials(t, router, "janedoe@gmail.com", "IAmAPassword!")
@@ -405,6 +467,14 @@ func TestDeleteTag(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	// unknown ID fails
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodDelete, "/api/v1/tags/9999", nil)
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
 
 	// another user cannot delete the tag
 	otherTagID := createTagAssumeSuccess(t, router, authorizationCookie, "keepme")
@@ -467,6 +537,76 @@ func TestAssignAndGetPhotoTags(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	// assigning to an unknown photo fails
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodPatch, "/api/v1/photo/nonexistent-photo-id/tags", bytes.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	errJSON = make(map[string]any)
+	err = json.NewDecoder(w.Body).Decode(&errJSON)
+	assert.NoError(t, err, "error occurred while decoding JSON")
+	assert.Equal(t, "PhotoNotFound", errJSON["errorType"])
+
+	// assigning an unknown tag fails
+	unknownPayload, err := json.Marshal(map[string]any{"tags": []int{9999}})
+	assert.NoError(t, err)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), bytes.NewReader(unknownPayload))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	// another user cannot assign tags to the photo, even with their own tag
+	createTestAccount(t, router, "janedoe", "janedoe@gmail.com", "IAmAPassword!")
+	janeCookie := loginWithCredentials(t, router, "janedoe@gmail.com", "IAmAPassword!")
+	janeTagID := createTagAssumeSuccess(t, router, janeCookie, "janestag")
+
+	janePayload, err := json.Marshal(map[string]any{"tags": []int{janeTagID}})
+	assert.NoError(t, err)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), bytes.NewReader(janePayload))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(janeCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	// assigning another user's tag to your own photo fails
+	foreignPayload, err := json.Marshal(map[string]any{"tags": []int{janeTagID}})
+	assert.NoError(t, err)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), bytes.NewReader(foreignPayload))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	// another user cannot list the photo's tags
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), nil)
+	req.AddCookie(janeCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	// listing tags of an unknown photo fails
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, "/api/v1/photo/nonexistent-photo-id/tags", nil)
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestGetTagPhotos(t *testing.T) {
@@ -626,4 +766,55 @@ func TestRemovePhotoTags(t *testing.T) {
 
 	w = removeTags(janeCookie, photoID, payload)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	// removing an unknown tag fails
+	payload, err = json.Marshal(map[string]any{"tags": []int{9999}})
+	assert.NoError(t, err)
+
+	w = removeTags(authorizationCookie, photoID, payload)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	// removing another user's tag fails
+	janeTagID := createTagAssumeSuccess(t, router, janeCookie, "janestag")
+	payload, err = json.Marshal(map[string]any{"tags": []int{janeTagID}})
+	assert.NoError(t, err)
+
+	w = removeTags(authorizationCookie, photoID, payload)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestGetPhotoOwnership(t *testing.T) {
+	router := server.NewMockServer()
+
+	createTestAccount(t, router, "johndoe", "johndoe@gmail.com", "IAmAPassword!")
+	generateAuthorizationCookie(t, router, "johndoe@gmail.com", "IAmAPassword!")
+
+	photoID := uploadPhotoAssumeSuccess(t, router, authorizationCookie)
+
+	// the owner can fetch the photo metadata
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/photo/%s", photoID), nil)
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// another user cannot fetch the photo metadata
+	createTestAccount(t, router, "janedoe", "janedoe@gmail.com", "IAmAPassword!")
+	janeCookie := loginWithCredentials(t, router, "janedoe@gmail.com", "IAmAPassword!")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/photo/%s", photoID), nil)
+	req.AddCookie(janeCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	// fetching an unknown photo fails
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, "/api/v1/photo/nonexistent-photo-id", nil)
+	req.AddCookie(authorizationCookie)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }

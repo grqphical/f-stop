@@ -78,6 +78,13 @@ func (s *Server) UploadPhotoHandler(c *gin.Context) {
 
 // API call that returns the metadata of a photo based on it's ID
 func (s *Server) GetPhotoHandler(c *gin.Context) {
+	userVal, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	user := userVal.(models.User)
+
 	id := c.Param("id")
 	if id == "" {
 		c.AbortWithStatus(http.StatusBadRequest)
@@ -94,6 +101,11 @@ func (s *Server) GetPhotoHandler(c *gin.Context) {
 		log.Printf("error: %v\n", err)
 		return
 
+	}
+
+	if metadata.OwnerID != user.ID {
+		httpError(c, http.StatusUnauthorized, "Unauthorized", "You are not authorized to do this")
+		return
 	}
 
 	c.JSON(http.StatusOK, metadata)
