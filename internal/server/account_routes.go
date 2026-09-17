@@ -79,3 +79,13 @@ func (s *Server) GetUserHandler(c *gin.Context) {
 	user := userVal.(models.User)
 	c.JSON(http.StatusOK, user)
 }
+
+func (s *Server) LogoutHandler(c *gin.Context) {
+	_, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+	}
+
+	// delete authentication cookie
+	c.SetCookie("Authorization", "", 0, "", "", false, true)
+}

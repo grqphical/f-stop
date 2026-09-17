@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { router } from '../router';
 
 const user = ref({ username: "" });
 const error = ref<string | null>(null);
@@ -32,10 +33,20 @@ onMounted(async () => {
         loading.value = false;
     }
 });
+
+async function logoutHandler() {
+    await fetch("/api/v1/logout");
+    router.push("/login")
+}
 </script>
 
 <template>
     <p v-if="loading">Loading...</p>
     <p v-else-if="error">Something went wrong: {{ error }}</p>
-    <h1 v-else>Hello, {{ user.username }}!</h1>
+    <div v-else>
+        <h1>Hello, {{ user.username }}!</h1>
+        <button @click="logoutHandler">Logout</button>
+    </div>
+
+
 </template>

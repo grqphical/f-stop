@@ -34,4 +34,5 @@ async function handleLoginSubmit(event: SubmitEvent) {
 
         <input type="submit" value="Log In">
     </form>
+    <button @click="router.push('/create-account')">Create Account</button>
 </template>

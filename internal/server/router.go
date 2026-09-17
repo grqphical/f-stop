@@ -31,6 +31,7 @@ func (s *Server) GenerateRouter() *gin.Engine {
 	router.POST("/create-account", s.CreateAccountHandler)
 	router.POST("/login", s.LoginHandler)
 	router.GET("/user", s.Authorization(), s.GetUserHandler)
+	router.GET("/logout", s.Authorization(), s.LogoutHandler)
 
 	router.GET("/tags/names/:name", s.Authorization(), s.GetTagByNameHandler)
 	router.POST("/tags", s.Authorization(), s.CreateTagHandler)
