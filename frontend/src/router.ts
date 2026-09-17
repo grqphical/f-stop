@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from './Views/HomeView.vue'
 import LoginView from './Views/LoginView.vue'
 import CreateAccountView from './Views/CreateAccountView.vue'
+import PhotoView from './Views/PhotoView.vue'
 
 async function checkUserAuthentication(): Promise<boolean> {
     const response = await fetch("/api/v1/user")
@@ -22,6 +23,10 @@ const routes = [
     {
         path: '/create-account',
         component: CreateAccountView
+    },
+    {
+        path: '/photos/:id',
+        component: PhotoView
     }
 ]
 

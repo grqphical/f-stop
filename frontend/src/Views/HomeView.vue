@@ -145,7 +145,8 @@ onMounted(async () => {
         <button @click="uploadPhotoHandler">Upload Photo</button>
 
         <div>
-            <img v-for="photoMetadata in photosMetadata" :src="photoMetadata.thumbnailPermalink">
+            <img v-for="photoMetadata in photosMetadata" :src="photoMetadata.thumbnailPermalink"
+                @click="router.push(`/photos/${photoMetadata.id}`)">
         </div>
     </div>
 
