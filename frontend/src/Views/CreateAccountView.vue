@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
 import { router } from '../router';
+import type { User } from '../models/models';
 
-const form = reactive({
+type CreateAccountForm = Pick<User, 'username' | 'email'> & { password: string }
+
+const form = reactive<CreateAccountForm>({
     username: "",
     email: "",
     password: ""

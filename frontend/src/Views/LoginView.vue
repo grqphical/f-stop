@@ -2,8 +2,12 @@
 import { reactive } from 'vue';
 import { router } from '../router';
 
+interface LoginForm {
+  email: string
+  password: string
+}
 
-const form = reactive({ email: "", password: "" })
+const form = reactive<LoginForm>({ email: "", password: "" })
 
 async function handleLoginSubmit(event: SubmitEvent) {
     event.preventDefault()

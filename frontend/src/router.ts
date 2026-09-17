@@ -30,7 +30,7 @@ export const router = createRouter({
     routes,
 })
 
-router.beforeEach(async (to, from) => {
+router.beforeEach(async (to, _from) => {
     if (to.path !== '/login' && to.path !== '/create-account' && !await checkUserAuthentication()) {
         return '/login'
     }
