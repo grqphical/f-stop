@@ -32,7 +32,7 @@ func createTestAccount(t *testing.T, router *gin.Engine, username string, email 
 		"password": password,
 	}
 	w := httptest.NewRecorder()
-	req := newMultipartRequest(t, "/api/v1/create-account", formData)
+	req := newMultipartRequest(t, "/create-account", formData)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusCreated, w.Code, "status code not 201 CREATED")
@@ -97,7 +97,7 @@ func generateAuthorizationCookie(t *testing.T, router *gin.Engine, email string,
 	}
 
 	w := httptest.NewRecorder()
-	req := newMultipartRequest(t, "/api/v1/login", formData)
+	req := newMultipartRequest(t, "/login", formData)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)

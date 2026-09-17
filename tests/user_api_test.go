@@ -21,14 +21,14 @@ func TestUserCreate(t *testing.T) {
 
 	// 1. Initial creation succeeds
 	w := httptest.NewRecorder()
-	req := newMultipartRequest(t, "/api/v1/create-account", formData)
+	req := newMultipartRequest(t, "/create-account", formData)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusCreated, w.Code, "status code not 201 CREATED")
 
 	// 2. Duplicate account creation fails
 	w = httptest.NewRecorder()
-	req = newMultipartRequest(t, "/api/v1/create-account", formData)
+	req = newMultipartRequest(t, "/create-account", formData)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code, "status code not 400 BAD REQUEST")
@@ -52,7 +52,7 @@ func TestUserLogin(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req := newMultipartRequest(t, "/api/v1/login", formData)
+	req := newMultipartRequest(t, "/login", formData)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -71,7 +71,7 @@ func TestUserLogin(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	req = newMultipartRequest(t, "/api/v1/login", formData)
+	req = newMultipartRequest(t, "/login", formData)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -89,7 +89,7 @@ func TestUserLogin(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	req = newMultipartRequest(t, "/api/v1/login", formData)
+	req = newMultipartRequest(t, "/login", formData)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
@@ -106,7 +106,7 @@ func TestGetUserInfo(t *testing.T) {
 
 	createTestAccount(t, router, "johndoe", "johndoe@gmail.com", "IAmAPassword!")
 
-	req, _ := http.NewRequest("GET", "/api/v1/user", nil)
+	req, _ := http.NewRequest("GET", "/user", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 

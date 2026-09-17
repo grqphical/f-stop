@@ -28,30 +28,27 @@ func (s *Server) GenerateRouter() *gin.Engine {
 
 	router.GET("/health", s.HealthHandler)
 
-	api := router.Group("/api")
-	v1 := api.Group("/v1")
+	router.POST("/create-account", s.CreateAccountHandler)
+	router.POST("/login", s.LoginHandler)
+	router.GET("/user", s.Authorization(), s.GetUserHandler)
 
-	v1.POST("/create-account", s.CreateAccountHandler)
-	v1.POST("/login", s.LoginHandler)
-	v1.GET("/user", s.Authorization(), s.GetUserHandler)
+	router.GET("/tags/names/:name", s.Authorization(), s.GetTagByNameHandler)
+	router.POST("/tags", s.Authorization(), s.CreateTagHandler)
+	router.GET("/tags", s.Authorization(), s.GetUserTagsHandler)
+	router.GET("/tags/:id", s.Authorization(), s.GetTagByIDHandler)
+	router.DELETE("/tags/:id", s.Authorization(), s.DeleteTagHandler)
+	router.PUT("/tags/:id", s.Authorization(), s.RenameTagHandler)
+	router.GET("/tags/:id/photos", s.Authorization(), s.GetTagPhotosHandler)
 
-	v1.GET("/tags/names/:name", s.Authorization(), s.GetTagByNameHandler)
-	v1.POST("/tags", s.Authorization(), s.CreateTagHandler)
-	v1.GET("/tags", s.Authorization(), s.GetUserTagsHandler)
-	v1.GET("/tags/:id", s.Authorization(), s.GetTagByIDHandler)
-	v1.DELETE("/tags/:id", s.Authorization(), s.DeleteTagHandler)
-	v1.PUT("/tags/:id", s.Authorization(), s.RenameTagHandler)
-	v1.GET("/tags/:id/photos", s.Authorization(), s.GetTagPhotosHandler)
+	router.PUT("/photo", s.Authorization(), s.UploadPhotoHandler)
+	router.GET("/photo/:id", s.Authorization(), s.GetPhotoHandler)
+	router.DELETE("/photo/:id", s.Authorization(), s.DeletePhotoHandler)
+	router.GET("/photo/all", s.Authorization(), s.GetUserPhotosHandler)
+	router.PATCH("/photo/:id/tags", s.Authorization(), s.AssignTagHandler)
+	router.GET("/photo/:id/tags", s.Authorization(), s.GetPhotoTagsHandler)
+	router.DELETE("/photo/:id/tags", s.Authorization(), s.RemovePhotoTagsHandler)
 
-	v1.PUT("/photo", s.Authorization(), s.UploadPhotoHandler)
-	v1.GET("/photo/:id", s.Authorization(), s.GetPhotoHandler)
-	v1.DELETE("/photo/:id", s.Authorization(), s.DeletePhotoHandler)
-	v1.GET("/photo/all", s.Authorization(), s.GetUserPhotosHandler)
-	v1.PATCH("/photo/:id/tags", s.Authorization(), s.AssignTagHandler)
-	v1.GET("/photo/:id/tags", s.Authorization(), s.GetPhotoTagsHandler)
-	v1.DELETE("/photo/:id/tags", s.Authorization(), s.RemovePhotoTagsHandler)
-
-	v1.GET("/jobs/:id", s.Authorization(), s.GetJobHandler)
+	router.GET("/jobs/:id", s.Authorization(), s.GetJobHandler)
 
 	return router
 }

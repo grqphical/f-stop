@@ -50,7 +50,7 @@ func loginWithCredentials(t *testing.T, router *gin.Engine, email string, passwo
 	}
 
 	w := httptest.NewRecorder()
-	req := newMultipartRequest(t, "/api/v1/login", formData)
+	req := newMultipartRequest(t, "/login", formData)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -67,7 +67,7 @@ func createTagAssumeSuccess(t *testing.T, router *gin.Engine, cookie *http.Cooki
 	t.Helper()
 
 	w := httptest.NewRecorder()
-	req := newMultipartMethodRequest(t, http.MethodPost, "/api/v1/tags", map[string]string{"name": name})
+	req := newMultipartMethodRequest(t, http.MethodPost, "/tags", map[string]string{"name": name})
 	req.AddCookie(cookie)
 	router.ServeHTTP(w, req)
 
@@ -88,7 +88,7 @@ func uploadPhotoAssumeSuccess(t *testing.T, router *gin.Engine, cookie *http.Coo
 	t.Helper()
 
 	w := httptest.NewRecorder()
-	req := newMultipartFileRequest(t, "/api/v1/photo", "test_data/perlin_noise.png")
+	req := newMultipartFileRequest(t, "/photo", "test_data/perlin_noise.png")
 	req.AddCookie(cookie)
 	router.ServeHTTP(w, req)
 
@@ -112,7 +112,7 @@ func assignTagsAssumeSuccess(t *testing.T, router *gin.Engine, cookie *http.Cook
 	assert.NoError(t, err)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), bytes.NewReader(payload))
+	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("/photo/%s/tags", photoID), bytes.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(cookie)
 	router.ServeHTTP(w, req)
@@ -125,7 +125,7 @@ func getPhotoTags(t *testing.T, router *gin.Engine, cookie *http.Cookie, photoID
 	t.Helper()
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), nil)
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/photo/%s/tags", photoID), nil)
 	req.AddCookie(cookie)
 	router.ServeHTTP(w, req)
 
@@ -146,7 +146,7 @@ func getTagPhotos(t *testing.T, router *gin.Engine, cookie *http.Cookie, tagID i
 	t.Helper()
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/tags/%d/photos", tagID), nil)
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/tags/%d/photos", tagID), nil)
 	req.AddCookie(cookie)
 	router.ServeHTTP(w, req)
 
@@ -176,7 +176,7 @@ func TestTagCreate(t *testing.T) {
 
 	// creating a duplicate tag fails
 	w := httptest.NewRecorder()
-	req := newMultipartMethodRequest(t, http.MethodPost, "/api/v1/tags", map[string]string{"name": "vacation"})
+	req := newMultipartMethodRequest(t, http.MethodPost, "/tags", map[string]string{"name": "vacation"})
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -189,7 +189,7 @@ func TestTagCreate(t *testing.T) {
 
 	// creating a tag without a name fails
 	w = httptest.NewRecorder()
-	req = newMultipartMethodRequest(t, http.MethodPost, "/api/v1/tags", map[string]string{})
+	req = newMultipartMethodRequest(t, http.MethodPost, "/tags", map[string]string{})
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -197,7 +197,7 @@ func TestTagCreate(t *testing.T) {
 
 	// unauthenticated creation fails
 	w = httptest.NewRecorder()
-	req = newMultipartMethodRequest(t, http.MethodPost, "/api/v1/tags", map[string]string{"name": "noauth"})
+	req = newMultipartMethodRequest(t, http.MethodPost, "/tags", map[string]string{"name": "noauth"})
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -213,7 +213,7 @@ func TestGetTagByID(t *testing.T) {
 
 	// fetching the tag by ID returns it
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/tags/%d", tagID), nil)
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/tags/%d", tagID), nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -228,7 +228,7 @@ func TestGetTagByID(t *testing.T) {
 
 	// non-numeric ID fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, "/api/v1/tags/notanid", nil)
+	req, _ = http.NewRequest(http.MethodGet, "/tags/notanid", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -241,7 +241,7 @@ func TestGetTagByID(t *testing.T) {
 
 	// unknown ID fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, "/api/v1/tags/9999", nil)
+	req, _ = http.NewRequest(http.MethodGet, "/tags/9999", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -254,7 +254,7 @@ func TestGetTagByID(t *testing.T) {
 
 	// unauthenticated fetch fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/tags/%d", tagID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/tags/%d", tagID), nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -264,7 +264,7 @@ func TestGetTagByID(t *testing.T) {
 	janeCookie := loginWithCredentials(t, router, "janedoe@gmail.com", "IAmAPassword!")
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/tags/%d", tagID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/tags/%d", tagID), nil)
 	req.AddCookie(janeCookie)
 	router.ServeHTTP(w, req)
 
@@ -281,7 +281,7 @@ func TestGetTagByName(t *testing.T) {
 
 	// fetching the tag by name returns it
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/tags/names/sunset", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/tags/names/sunset", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -296,7 +296,7 @@ func TestGetTagByName(t *testing.T) {
 
 	// unknown name fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, "/api/v1/tags/names/doesnotexist", nil)
+	req, _ = http.NewRequest(http.MethodGet, "/tags/names/doesnotexist", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -316,7 +316,7 @@ func TestListUserTags(t *testing.T) {
 
 	// no tags initially
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/tags", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/tags", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -333,7 +333,7 @@ func TestListUserTags(t *testing.T) {
 
 	// both tags are listed
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, "/api/v1/tags", nil)
+	req, _ = http.NewRequest(http.MethodGet, "/tags", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -367,7 +367,7 @@ func TestRenameTag(t *testing.T) {
 
 	// renaming succeeds
 	w := httptest.NewRecorder()
-	req := newMultipartMethodRequest(t, http.MethodPut, fmt.Sprintf("/api/v1/tags/%d", tagID), map[string]string{"name": "newname"})
+	req := newMultipartMethodRequest(t, http.MethodPut, fmt.Sprintf("/tags/%d", tagID), map[string]string{"name": "newname"})
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -375,7 +375,7 @@ func TestRenameTag(t *testing.T) {
 
 	// the new name is returned when fetching
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/tags/%d", tagID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/tags/%d", tagID), nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -388,7 +388,7 @@ func TestRenameTag(t *testing.T) {
 
 	// non-numeric ID fails
 	w = httptest.NewRecorder()
-	req = newMultipartMethodRequest(t, http.MethodPut, "/api/v1/tags/notanid", map[string]string{"name": "nope"})
+	req = newMultipartMethodRequest(t, http.MethodPut, "/tags/notanid", map[string]string{"name": "nope"})
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -396,7 +396,7 @@ func TestRenameTag(t *testing.T) {
 
 	// unknown ID fails
 	w = httptest.NewRecorder()
-	req = newMultipartMethodRequest(t, http.MethodPut, "/api/v1/tags/9999", map[string]string{"name": "nope"})
+	req = newMultipartMethodRequest(t, http.MethodPut, "/tags/9999", map[string]string{"name": "nope"})
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -410,7 +410,7 @@ func TestRenameTag(t *testing.T) {
 	// renaming to a duplicate name fails
 	otherTagID := createTagAssumeSuccess(t, router, authorizationCookie, "taken")
 	w = httptest.NewRecorder()
-	req = newMultipartMethodRequest(t, http.MethodPut, fmt.Sprintf("/api/v1/tags/%d", otherTagID), map[string]string{"name": "newname"})
+	req = newMultipartMethodRequest(t, http.MethodPut, fmt.Sprintf("/tags/%d", otherTagID), map[string]string{"name": "newname"})
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -418,7 +418,7 @@ func TestRenameTag(t *testing.T) {
 
 	// renaming without a name fails
 	w = httptest.NewRecorder()
-	req = newMultipartMethodRequest(t, http.MethodPut, fmt.Sprintf("/api/v1/tags/%d", tagID), map[string]string{})
+	req = newMultipartMethodRequest(t, http.MethodPut, fmt.Sprintf("/tags/%d", tagID), map[string]string{})
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -429,7 +429,7 @@ func TestRenameTag(t *testing.T) {
 	janeCookie := loginWithCredentials(t, router, "janedoe@gmail.com", "IAmAPassword!")
 
 	w = httptest.NewRecorder()
-	req = newMultipartMethodRequest(t, http.MethodPut, fmt.Sprintf("/api/v1/tags/%d", tagID), map[string]string{"name": "hijacked"})
+	req = newMultipartMethodRequest(t, http.MethodPut, fmt.Sprintf("/tags/%d", tagID), map[string]string{"name": "hijacked"})
 	req.AddCookie(janeCookie)
 	router.ServeHTTP(w, req)
 
@@ -446,7 +446,7 @@ func TestDeleteTag(t *testing.T) {
 
 	// deleting the tag succeeds
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/v1/tags/%d", tagID), nil)
+	req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("/tags/%d", tagID), nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -454,7 +454,7 @@ func TestDeleteTag(t *testing.T) {
 
 	// fetching the deleted tag fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/tags/%d", tagID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/tags/%d", tagID), nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -462,7 +462,7 @@ func TestDeleteTag(t *testing.T) {
 
 	// non-numeric ID fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodDelete, "/api/v1/tags/notanid", nil)
+	req, _ = http.NewRequest(http.MethodDelete, "/tags/notanid", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -470,7 +470,7 @@ func TestDeleteTag(t *testing.T) {
 
 	// unknown ID fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodDelete, "/api/v1/tags/9999", nil)
+	req, _ = http.NewRequest(http.MethodDelete, "/tags/9999", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -482,7 +482,7 @@ func TestDeleteTag(t *testing.T) {
 	janeCookie := loginWithCredentials(t, router, "janedoe@gmail.com", "IAmAPassword!")
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/v1/tags/%d", otherTagID), nil)
+	req, _ = http.NewRequest(http.MethodDelete, fmt.Sprintf("/tags/%d", otherTagID), nil)
 	req.AddCookie(janeCookie)
 	router.ServeHTTP(w, req)
 
@@ -515,7 +515,7 @@ func TestAssignAndGetPhotoTags(t *testing.T) {
 
 	// malformed JSON fails
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), bytes.NewReader([]byte("{invalid")))
+	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("/photo/%s/tags", photoID), bytes.NewReader([]byte("{invalid")))
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
@@ -532,7 +532,7 @@ func TestAssignAndGetPhotoTags(t *testing.T) {
 	assert.NoError(t, err)
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), bytes.NewReader(payload))
+	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/photo/%s/tags", photoID), bytes.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(w, req)
 
@@ -540,7 +540,7 @@ func TestAssignAndGetPhotoTags(t *testing.T) {
 
 	// assigning to an unknown photo fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodPatch, "/api/v1/photo/nonexistent-photo-id/tags", bytes.NewReader(payload))
+	req, _ = http.NewRequest(http.MethodPatch, "/photo/nonexistent-photo-id/tags", bytes.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
@@ -557,7 +557,7 @@ func TestAssignAndGetPhotoTags(t *testing.T) {
 	assert.NoError(t, err)
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), bytes.NewReader(unknownPayload))
+	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/photo/%s/tags", photoID), bytes.NewReader(unknownPayload))
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
@@ -573,7 +573,7 @@ func TestAssignAndGetPhotoTags(t *testing.T) {
 	assert.NoError(t, err)
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), bytes.NewReader(janePayload))
+	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/photo/%s/tags", photoID), bytes.NewReader(janePayload))
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(janeCookie)
 	router.ServeHTTP(w, req)
@@ -585,7 +585,7 @@ func TestAssignAndGetPhotoTags(t *testing.T) {
 	assert.NoError(t, err)
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), bytes.NewReader(foreignPayload))
+	req, _ = http.NewRequest(http.MethodPatch, fmt.Sprintf("/photo/%s/tags", photoID), bytes.NewReader(foreignPayload))
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
@@ -594,7 +594,7 @@ func TestAssignAndGetPhotoTags(t *testing.T) {
 
 	// another user cannot list the photo's tags
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/photo/%s/tags", photoID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/photo/%s/tags", photoID), nil)
 	req.AddCookie(janeCookie)
 	router.ServeHTTP(w, req)
 
@@ -602,7 +602,7 @@ func TestAssignAndGetPhotoTags(t *testing.T) {
 
 	// listing tags of an unknown photo fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, "/api/v1/photo/nonexistent-photo-id/tags", nil)
+	req, _ = http.NewRequest(http.MethodGet, "/photo/nonexistent-photo-id/tags", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -643,7 +643,7 @@ func TestGetTagPhotos(t *testing.T) {
 
 	// non-numeric tag ID fails
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/tags/notanid/photos", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/tags/notanid/photos", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -656,7 +656,7 @@ func TestGetTagPhotos(t *testing.T) {
 
 	// unknown tag ID fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, "/api/v1/tags/9999/photos", nil)
+	req, _ = http.NewRequest(http.MethodGet, "/tags/9999/photos", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -672,7 +672,7 @@ func TestGetTagPhotos(t *testing.T) {
 	janeCookie := loginWithCredentials(t, router, "janedoe@gmail.com", "IAmAPassword!")
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/tags/%d/photos", tagID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/tags/%d/photos", tagID), nil)
 	req.AddCookie(janeCookie)
 	router.ServeHTTP(w, req)
 
@@ -694,7 +694,7 @@ func TestRemovePhotoTags(t *testing.T) {
 
 	removeTags := func(cookie *http.Cookie, targetPhotoID string, body []byte) *httptest.ResponseRecorder {
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/v1/photo/%s/tags", targetPhotoID), bytes.NewReader(body))
+		req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("/photo/%s/tags", targetPhotoID), bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		if cookie != nil {
 			req.AddCookie(cookie)
@@ -793,7 +793,7 @@ func TestGetPhotoOwnership(t *testing.T) {
 
 	// the owner can fetch the photo metadata
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/photo/%s", photoID), nil)
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/photo/%s", photoID), nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -804,7 +804,7 @@ func TestGetPhotoOwnership(t *testing.T) {
 	janeCookie := loginWithCredentials(t, router, "janedoe@gmail.com", "IAmAPassword!")
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/photo/%s", photoID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/photo/%s", photoID), nil)
 	req.AddCookie(janeCookie)
 	router.ServeHTTP(w, req)
 
@@ -812,7 +812,7 @@ func TestGetPhotoOwnership(t *testing.T) {
 
 	// fetching an unknown photo fails
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, "/api/v1/photo/nonexistent-photo-id", nil)
+	req, _ = http.NewRequest(http.MethodGet, "/photo/nonexistent-photo-id", nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 

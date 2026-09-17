@@ -35,7 +35,7 @@ func TestPhotoUpload(t *testing.T) {
 
 	// upload the photo
 	w := httptest.NewRecorder()
-	req := newMultipartFileRequest(t, "/api/v1/photo", "test_data/perlin_noise.png")
+	req := newMultipartFileRequest(t, "/photo", "test_data/perlin_noise.png")
 	req.AddCookie(authorizationCookie)
 
 	router.ServeHTTP(w, req)
@@ -51,7 +51,7 @@ func TestPhotoUpload(t *testing.T) {
 
 	// make sure the photo's metadata is correct
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/photo/%s", photoID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/photo/%s", photoID), nil)
 	req.AddCookie(authorizationCookie)
 
 	router.ServeHTTP(w, req)
@@ -88,7 +88,7 @@ func TestPhotoUpload(t *testing.T) {
 
 	// check if a thumbnail was generated
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/jobs/%d", int(respJSON["thumbnailJobId"].(float64))), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/jobs/%d", int(respJSON["thumbnailJobId"].(float64))), nil)
 	req.AddCookie(authorizationCookie)
 
 	// check job status until thumbnail generation is done
@@ -135,7 +135,7 @@ func TestListAllPhotos(t *testing.T) {
 
 	// check to make sure no photos are returned
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/photo/all", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/photo/all", nil)
 	req.AddCookie(authorizationCookie)
 
 	router.ServeHTTP(w, req)
@@ -150,7 +150,7 @@ func TestListAllPhotos(t *testing.T) {
 
 	// upload the photo
 	w = httptest.NewRecorder()
-	req = newMultipartFileRequest(t, "/api/v1/photo", "test_data/perlin_noise.png")
+	req = newMultipartFileRequest(t, "/photo", "test_data/perlin_noise.png")
 	req.AddCookie(authorizationCookie)
 
 	router.ServeHTTP(w, req)
@@ -159,7 +159,7 @@ func TestListAllPhotos(t *testing.T) {
 
 	// retrieve every photo
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, "/api/v1/photo/all", nil)
+	req, _ = http.NewRequest(http.MethodGet, "/photo/all", nil)
 	req.AddCookie(authorizationCookie)
 
 	router.ServeHTTP(w, req)
@@ -184,7 +184,7 @@ func TestPhotoDeletion(t *testing.T) {
 
 	// upload the photo
 	w := httptest.NewRecorder()
-	req := newMultipartFileRequest(t, "/api/v1/photo", "test_data/perlin_noise.png")
+	req := newMultipartFileRequest(t, "/photo", "test_data/perlin_noise.png")
 	req.AddCookie(authorizationCookie)
 
 	router.ServeHTTP(w, req)
@@ -199,7 +199,7 @@ func TestPhotoDeletion(t *testing.T) {
 	assert.True(t, exists, "field 'photoId' does not exist on response")
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/v1/photo/%s", photoID), nil)
+	req, _ = http.NewRequest(http.MethodDelete, fmt.Sprintf("/photo/%s", photoID), nil)
 	req.AddCookie(authorizationCookie)
 	router.ServeHTTP(w, req)
 
@@ -207,7 +207,7 @@ func TestPhotoDeletion(t *testing.T) {
 
 	// make sure photo metadata does not exist
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/photo/%s", photoID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/photo/%s", photoID), nil)
 	req.AddCookie(authorizationCookie)
 
 	router.ServeHTTP(w, req)
