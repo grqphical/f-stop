@@ -17,6 +17,10 @@ type MockDatabase struct {
 	photos        map[string]models.PhotoMetadata
 	jobs          []models.Job
 	jobLocks      []bool
+	tags          map[int]models.Tag
+	tagIdCounter  int
+	// photoId -> set of tagIds
+	photoTags map[string]map[int]bool
 }
 
 func NewMockDatabase() *MockDatabase {
@@ -26,10 +30,17 @@ func NewMockDatabase() *MockDatabase {
 		photos:        make(map[string]models.PhotoMetadata),
 		jobs:          make([]models.Job, 0),
 		jobLocks:      make([]bool, 0),
+		tags:          make(map[int]models.Tag),
+		tagIdCounter:  0,
+		photoTags:     make(map[string]map[int]bool),
 	}
 }
 
 func (m *MockDatabase) Close() {}
+
+func (m *MockDatabase) Health() error {
+	return nil
+}
 
 func (m *MockDatabase) CreateUser(username string, email string, password string) (models.User, error) {
 	for _, user := range m.users {
@@ -236,4 +247,128 @@ func (m *MockDatabase) GetJob(jobId int) (models.Job, error) {
 	job := m.jobs[jobId]
 
 	return job, nil
+}
+
+func (m *MockDatabase) CreateTag(name string, ownerId int) (int, error) {
+	for _, tag := range m.tags {
+		if tag.OwnerID == ownerId && tag.Name == name {
+			return -1, ErrUniqueConstraint
+		}
+	}
+
+	id := m.tagIdCounter
+	m.tagIdCounter++
+	m.tags[id] = models.Tag{
+		ID:      id,
+		OwnerID: ownerId,
+		Name:    name,
+	}
+
+	return id, nil
+}
+
+func (m *MockDatabase) GetTagByName(name string, ownerId int) (models.Tag, error) {
+	for _, tag := range m.tags {
+		if tag.OwnerID == ownerId && tag.Name == name {
+			return tag, nil
+		}
+	}
+
+	return models.Tag{}, ErrNotFound
+}
+
+func (m *MockDatabase) GetTagByID(id int) (models.Tag, error) {
+	tag, exists := m.tags[id]
+	if !exists {
+		return models.Tag{}, ErrNotFound
+	}
+
+	return tag, nil
+}
+
+func (m *MockDatabase) GetUserTags(ownerId int) ([]models.Tag, error) {
+	tags := make([]models.Tag, 0)
+	for _, tag := range m.tags {
+		if tag.OwnerID == ownerId {
+			tags = append(tags, tag)
+		}
+	}
+
+	return tags, nil
+}
+
+func (m *MockDatabase) RenameTag(tagId int, newName string) error {
+	tag, exists := m.tags[tagId]
+	if !exists {
+		return ErrNotFound
+	}
+
+	for id, other := range m.tags {
+		if id != tagId && other.OwnerID == tag.OwnerID && other.Name == newName {
+			return ErrUniqueConstraint
+		}
+	}
+
+	tag.Name = newName
+	m.tags[tagId] = tag
+	return nil
+}
+
+func (m *MockDatabase) DeleteTag(tagId int) error {
+	delete(m.tags, tagId)
+	for photoId := range m.photoTags {
+		delete(m.photoTags[photoId], tagId)
+	}
+	return nil
+}
+
+func (m *MockDatabase) AssignPhotoTags(tagIds []int, photoId string) error {
+	if _, exists := m.photos[photoId]; !exists {
+		return ErrNotFound
+	}
+
+	if _, exists := m.photoTags[photoId]; !exists {
+		m.photoTags[photoId] = make(map[int]bool)
+	}
+
+	for _, tagId := range tagIds {
+		if _, exists := m.tags[tagId]; !exists {
+			return ErrNotFound
+		}
+		m.photoTags[photoId][tagId] = true
+	}
+
+	return nil
+}
+
+func (m *MockDatabase) RemovePhotoTag(tagId int, photoId string) error {
+	if set, exists := m.photoTags[photoId]; exists {
+		delete(set, tagId)
+	}
+	return nil
+}
+
+func (m *MockDatabase) GetPhotoTags(photoId string) ([]models.Tag, error) {
+	tags := make([]models.Tag, 0)
+	for tagId := range m.photoTags[photoId] {
+		if tag, exists := m.tags[tagId]; exists {
+			tags = append(tags, tag)
+		}
+	}
+
+	return tags, nil
+}
+
+func (m *MockDatabase) GetTagPhotos(tagId int) ([]models.PhotoMetadata, error) {
+	photos := make([]models.PhotoMetadata, 0)
+	for photoId, tagSet := range m.photoTags {
+		if !tagSet[tagId] {
+			continue
+		}
+		if photo, exists := m.photos[photoId]; exists {
+			photos = append(photos, photo)
+		}
+	}
+
+	return photos, nil
 }

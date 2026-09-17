@@ -9,6 +9,7 @@ import (
 // Generic interface that allows a mock database to be used for integration tests
 type DBInterface interface {
 	Close()
+	Health() error
 
 	CreateUser(string, string, string) (models.User, error)
 	GetUserByEmail(string) (models.User, error)
@@ -28,4 +29,16 @@ type DBInterface interface {
 	AcknowledgeSuccess(job_id int) error
 	AcknowledgeFailure(job_id int) error
 	GetJob(job_id int) (models.Job, error)
+
+	CreateTag(name string, ownerId int) (int, error)
+	GetTagByName(name string, ownerId int) (models.Tag, error)
+	GetTagByID(id int) (models.Tag, error)
+	GetUserTags(ownerId int) ([]models.Tag, error)
+	RenameTag(tagId int, newName string) error
+	DeleteTag(tagId int) error
+
+	AssignPhotoTags(tagIDs []int, photoId string) error
+	RemovePhotoTag(tagId int, photoId string) error
+	GetPhotoTags(photoId string) ([]models.Tag, error)
+	GetTagPhotos(tagId int) ([]models.PhotoMetadata, error)
 }

@@ -15,15 +15,16 @@ type GPSCoordinates struct {
 }
 
 type PhotoMetadata struct {
-	ID                string    `json:"id"`
-	OwnerID           int       `json:"ownerID"`
-	Filepath          string    `json:"-"`
-	ThumbnailFilepath string    `json:"-"`
-	ThumbnailJobId    *int      `json:"thumbnailJobId"`
-	Uploaded          time.Time `json:"uploaded"`
-	Size              int       `json:"size"`
-	MimeType          string    `json:"mimeType"`
-	Permalink         string    `json:"permalink"`
+	ID                 string    `json:"id"`
+	OwnerID            int       `json:"ownerID"`
+	Filepath           string    `json:"-"`
+	ThumbnailFilepath  string    `json:"-"`
+	ThumbnailPermalink string    `json:"thumbnailPermalink"`
+	ThumbnailJobId     *int      `json:"thumbnailJobId"`
+	Uploaded           time.Time `json:"uploaded"`
+	Size               int       `json:"size"`
+	MimeType           string    `json:"mimeType"`
+	Permalink          string    `json:"permalink"`
 
 	EXIFCoordinates GPSCoordinates `json:"exifCoordinates"`
 	EXIFCameraModel *string        `json:"exifCameraModel"`
@@ -43,4 +44,19 @@ type Job struct {
 	RetryCount int        `json:"-"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
+}
+
+type Tag struct {
+	ID      int    `json:"id"`
+	OwnerID int    `json:"ownerID"`
+	Name    string `json:"name"`
+}
+
+type TagAssignment struct {
+	PhotoID string `json:"photoId"`
+	TagID   string `json:"tagID"`
+}
+
+type TagAssigmentPayload struct {
+	Tags []int `json:"tags"`
 }

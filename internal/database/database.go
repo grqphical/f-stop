@@ -63,6 +63,14 @@ func (d *Database) Close() {
 	d.workerPool.Close()
 }
 
+func (d *Database) Health() error {
+	if d.apiPool.Ping(context.Background()) != nil {
+		return ErrDBDown
+	}
+
+	return nil
+}
+
 func (d *Database) CreateUser(username string, email string, password string) (models.User, error) {
 	conn, err := d.apiPool.Acquire(context.Background())
 	if err != nil {
@@ -193,6 +201,7 @@ func (d *Database) GetPhotoMetadataFromID(uuid string) (models.PhotoMetadata, er
 			&metadata.EXIFTakenAt, &metadata.EXIFCameraModel)
 
 	metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(metadata.Filepath))
+	metadata.ThumbnailPermalink = fmt.Sprintf("/storage/thumbnails/%s", filepath.Base(metadata.ThumbnailFilepath))
 
 	return metadata, pgxErrorToDatabaseError(err)
 }
@@ -339,4 +348,201 @@ func (d *Database) GetJob(job_id int) (models.Job, error) {
 		)
 
 	return job, pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) CreateTag(name string, ownerId int) (int, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return -1, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	var tagId int
+	err = conn.QueryRow(context.Background(), "INSERT INTO Tags (owner_id, name) VALUES ($1, $2) RETURNING id", ownerId, name).Scan(&tagId)
+	if err != nil {
+		return -1, pgxErrorToDatabaseError(err)
+	}
+
+	return tagId, nil
+}
+
+func (d *Database) GetTagByName(name string, ownerId int) (models.Tag, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return models.Tag{}, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	var tag models.Tag
+	err = conn.QueryRow(context.Background(), "SELECT * FROM Tags WHERE name = $1 AND owner_id = $2", name, ownerId).
+		Scan(&tag.ID, &tag.OwnerID, &tag.Name)
+
+	return tag, pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) GetTagByID(id int) (models.Tag, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return models.Tag{}, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	var tag models.Tag
+	err = conn.QueryRow(context.Background(), "SELECT * FROM Tags WHERE id = $1", id).
+		Scan(&tag.ID, &tag.OwnerID, &tag.Name)
+
+	return tag, pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) GetUserTags(ownerId int) ([]models.Tag, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	var tags []models.Tag = make([]models.Tag, 0)
+
+	rows, err := conn.Query(context.Background(), "SELECT * FROM Tags WHERE owner_id = $1", ownerId)
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var tag models.Tag
+		err = rows.Scan(&tag.ID, &tag.OwnerID, &tag.Name)
+		if err != nil {
+			return nil, pgxErrorToDatabaseError(err)
+		}
+
+		tags = append(tags, tag)
+	}
+
+	return tags, pgxErrorToDatabaseError(rows.Err())
+}
+
+func (d *Database) RenameTag(tagId int, newName string) error {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(context.Background(), "UPDATE Tags SET name = $1 WHERE id = $2", newName, tagId)
+	return pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) DeleteTag(tagId int) error {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(context.Background(), "DELETE FROM Tags WHERE id = $1", tagId)
+	return pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) AssignPhotoTags(tagIds []int, photoId string) error {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.Begin(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer tx.Rollback(context.Background())
+
+	for _, tagId := range tagIds {
+		_, err = tx.Exec(context.Background(), "INSERT INTO TagAssignments (photo_id, tag_id) VALUES ($1, $2)", photoId, tagId)
+		if err != nil {
+			return pgxErrorToDatabaseError(err)
+		}
+	}
+
+	return pgxErrorToDatabaseError(tx.Commit(context.Background()))
+}
+
+func (d *Database) RemovePhotoTag(tagId int, photoId string) error {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(context.Background(), "DELETE FROM TagAssignments WHERE photo_id = $1 AND tag_id = $2", photoId, tagId)
+	return pgxErrorToDatabaseError(err)
+}
+
+func (d *Database) GetPhotoTags(photoId string) ([]models.Tag, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	rows, err := conn.Query(context.Background(), `SELECT t.id, t.owner_id, t.name
+FROM Tags t
+JOIN TagAssignments pt ON pt.tag_id = t.id
+WHERE pt.photo_id = $1;`, photoId)
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+	defer rows.Close()
+
+	tags := make([]models.Tag, 0)
+	for rows.Next() {
+		var tag models.Tag
+		err = rows.Scan(&tag.ID, &tag.OwnerID, &tag.Name)
+		if err != nil {
+			return nil, pgxErrorToDatabaseError(err)
+		}
+
+		tags = append(tags, tag)
+	}
+
+	return tags, pgxErrorToDatabaseError(rows.Err())
+
+}
+
+func (d *Database) GetTagPhotos(tagId int) ([]models.PhotoMetadata, error) {
+	conn, err := d.workerPool.Acquire(context.Background())
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+	defer conn.Release()
+
+	rows, err := conn.Query(context.Background(), `SELECT
+			p.photo_id, p.owner_id, p.filepath, p.thumbnail_filepath, p.thumbnail_job_id, p.uploaded_timestamp, p.size, p.mime_type,
+			ST_Y(p.location::geometry) AS latitude, ST_X(p.location::geometry) AS longitude, p.taken_timestamp, p.camera_model
+		FROM Photos p
+		JOIN TagAssignments ta ON ta.photo_id = p.photo_id
+		WHERE ta.tag_id = $1;`, tagId)
+	if err != nil {
+		return nil, pgxErrorToDatabaseError(err)
+	}
+	defer rows.Close()
+
+	photos := make([]models.PhotoMetadata, 0)
+	for rows.Next() {
+		var metadata models.PhotoMetadata
+		err = rows.Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.ThumbnailFilepath,
+			&metadata.ThumbnailJobId, &metadata.Uploaded, &metadata.Size, &metadata.MimeType,
+			&metadata.EXIFCoordinates.Latitude, &metadata.EXIFCoordinates.Longitude,
+			&metadata.EXIFTakenAt, &metadata.EXIFCameraModel)
+		if err != nil {
+			return nil, pgxErrorToDatabaseError(err)
+		}
+
+		metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(metadata.Filepath))
+		metadata.ThumbnailPermalink = fmt.Sprintf("/storage/thumbnails/%s", filepath.Base(metadata.ThumbnailFilepath))
+
+		photos = append(photos, metadata)
+	}
+
+	return photos, pgxErrorToDatabaseError(rows.Err())
 }
