@@ -109,6 +109,7 @@ func (d *Database) GetUserByID(id int) (models.User, error) {
 	if err != nil {
 		return models.User{}, pgxErrorToDatabaseError(err)
 	}
+	defer conn.Release()
 
 	var user models.User
 	err = conn.QueryRow(context.Background(), "SELECT user_id, username, email, password FROM Users WHERE user_id = $1", id).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash)
