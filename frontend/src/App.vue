@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import { RouterView } from 'vue-router';
 
 fetch("/api/v1/health").then(async (response) => console.log(await response.json()))
 </script>
 
 <template>
-  <HelloWorld />
+  <RouterView />
 </template>
