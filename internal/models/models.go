@@ -13,7 +13,6 @@ type GPSCoordinates struct {
 	Latitude  *float64 `json:"latitude"`
 	Longitude *float64 `json:"longitude"`
 }
-
 type PhotoMetadata struct {
 	ID                 string    `json:"id"`
 	OwnerID            int       `json:"ownerID"`

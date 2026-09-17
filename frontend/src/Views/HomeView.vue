@@ -6,10 +6,12 @@ const user = ref({ username: "" });
 const error = ref<string | null>(null);
 const loading = ref(true);
 
+const photosMetadata = ref([])
+
 onMounted(async () => {
     const controller = new AbortController();
     try {
-        const response = await fetch("/api/v1/user", {
+        let response = await fetch("/api/v1/user", {
             credentials: "same-origin", // include if you rely on session cookies
             signal: controller.signal,
         });
@@ -17,16 +19,21 @@ onMounted(async () => {
         if (!response.ok) {
             throw new Error(`Server responded with ${response.status}`);
         }
-
-        const contentType = response.headers.get("content-type");
-        if (!contentType?.includes("application/json")) {
-            throw new Error("Expected JSON but got something else — check your proxy/route config");
-        }
-
         user.value = await response.json();
+
+        response = await fetch("/api/v1/photo/all", {
+            credentials: "same-origin",
+            signal: controller.signal
+        })
+        if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}`);
+        }
+        const jsonData = await response.json()
+        photosMetadata.value = jsonData.photos;
+
     } catch (err) {
         if (err instanceof Error) {
-            console.error("Failed to load user:", err.message);
+            console.error("Failed to load user data:", err.message);
             error.value = err.message;
         }
     } finally {
@@ -46,6 +53,10 @@ async function logoutHandler() {
     <div v-else>
         <h1>Hello, {{ user.username }}!</h1>
         <button @click="logoutHandler">Logout</button>
+
+        <div>
+            <img v-for="photoMetadata in photosMetadata" :src="photoMetadata.thumbnailPermalink">
+        </div>
     </div>
 
 

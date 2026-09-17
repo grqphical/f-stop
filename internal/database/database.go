@@ -214,19 +214,20 @@ func (d *Database) GetUserPhotos(ownerId int) ([]models.PhotoMetadata, error) {
 	}
 	defer conn.Release()
 	var result []models.PhotoMetadata = make([]models.PhotoMetadata, 0)
-	rows, err := conn.Query(context.Background(), "SELECT * FROM Photos WHERE owner_id = $1", ownerId)
+	rows, err := conn.Query(context.Background(), `SELECT photo_id, owner_id, filepath, thumbnail_filepath, thumbnail_job_id, uploaded_timestamp, size, mime_type, ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng, taken_timestamp, camera_model FROM Photos WHERE owner_id = $1`, ownerId)
 	if err != nil {
 		return nil, pgxErrorToDatabaseError(err)
 	}
 
 	for rows.Next() {
 		var metadata models.PhotoMetadata
-		err = rows.Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.ThumbnailFilepath, &metadata.ThumbnailJobId, &metadata.Uploaded, &metadata.Size, &metadata.MimeType)
+		err = rows.Scan(&metadata.ID, &metadata.OwnerID, &metadata.Filepath, &metadata.ThumbnailFilepath, &metadata.ThumbnailJobId, &metadata.Uploaded, &metadata.Size, &metadata.MimeType, &metadata.EXIFCoordinates.Latitude, &metadata.EXIFCoordinates.Longitude, &metadata.EXIFTakenAt, &metadata.EXIFCameraModel)
 		if err != nil {
 			return nil, pgxErrorToDatabaseError(err)
 		}
 
 		metadata.Permalink = fmt.Sprintf("/storage/%s", filepath.Base(metadata.Filepath))
+		metadata.ThumbnailPermalink = fmt.Sprintf("/storage/thumbnails/%s", filepath.Base(metadata.ThumbnailFilepath))
 
 		result = append(result, metadata)
 	}
