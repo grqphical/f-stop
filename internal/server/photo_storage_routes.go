@@ -261,12 +261,5 @@ func (s *Server) DeletePhotoHandler(c *gin.Context) {
 		return
 	}
 
-	err = os.Remove(photo.Filepath)
-	if err != nil {
-		c.AbortWithStatus(http.StatusInternalServerError)
-		fmt.Printf("error: %v\n", err)
-		return
-	}
-
 	c.JSON(http.StatusOK, gin.H{})
 }
