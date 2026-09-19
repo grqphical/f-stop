@@ -15,10 +15,15 @@ import (
 )
 
 func main() {
-	vips.Startup(nil)
+	if err := vips.Startup(nil); err != nil {
+		log.Fatalf("failed to start libvips: %v\n", err)
+	}
 	defer vips.Shutdown()
 
-	s := server.New()
+	s, err := server.New()
+	if err != nil {
+		log.Fatalf("server startup failed: %v\n", err)
+	}
 
 	go func() {
 		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

@@ -3,7 +3,7 @@ package database
 import (
 	"embed"
 	"errors"
-	"log"
+	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -13,18 +13,20 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-func applyMigrations(databaseURL string) {
+func applyMigrations(databaseURL string) error {
 	source, err := iofs.New(migrationsFS, "migrations")
 	if err != nil {
-		log.Fatalf("migration source error: %v\n", err)
+		return fmt.Errorf("migration source error: %w", err)
 	}
 
 	m, err := migrate.NewWithSourceInstance("iofs", source, databaseURL)
 	if err != nil {
-		log.Fatalf("migration instance error: %v\n", err)
+		return fmt.Errorf("migration instance error: %w", err)
 	}
 
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		log.Fatalf("migration error: %v\n", err)
+		return fmt.Errorf("migration error: %w", err)
 	}
+
+	return nil
 }

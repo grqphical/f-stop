@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -38,24 +37,65 @@ type Database struct {
 	workerPool *pgxpool.Pool
 }
 
-func New(workerCount int) *Database {
-	config, _ := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
+func New(workerCount int) (*Database, error) {
+	fmt.Println("connecting to Postgres...")
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		return nil, fmt.Errorf("DATABASE_URL is not set")
+	}
+
+	config, err := pgxpool.ParseConfig(databaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse DATABASE_URL: %w", err)
+	}
 	config.MaxConns = 5
 	apiPool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		log.Fatalf("failed to connect to Postgres: %v\n", err)
+		return nil, fmt.Errorf("failed to create Postgres api pool: %w", err)
 	}
 
-	applyMigrations(os.Getenv("DATABASE_URL"))
+	// pgxpool.NewWithConfig is lazy and connects in the background, so an
+	// explicit Ping is required to fail fast when Postgres is down.
+	pingCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	err = apiPool.Ping(pingCtx)
+	cancel()
+	if err != nil {
+		apiPool.Close()
+		return nil, fmt.Errorf("failed to connect to Postgres: %w", err)
+	}
 
-	config, _ = pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
+	fmt.Println("connected to Postgres!")
+
+	if err := applyMigrations(databaseURL); err != nil {
+		apiPool.Close()
+		return nil, err
+	}
+
+	config, err = pgxpool.ParseConfig(databaseURL)
+	if err != nil {
+		apiPool.Close()
+		return nil, fmt.Errorf("failed to parse DATABASE_URL: %w", err)
+	}
 	config.MaxConns = int32(workerCount)
 	workerPool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		apiPool.Close()
+		return nil, fmt.Errorf("failed to create Postgres worker pool: %w", err)
+	}
+
+	pingCtx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	err = workerPool.Ping(pingCtx)
+	cancel()
+	if err != nil {
+		apiPool.Close()
+		workerPool.Close()
+		return nil, fmt.Errorf("failed to connect to Postgres: %w", err)
+	}
 
 	return &Database{
 		apiPool,
 		workerPool,
-	}
+	}, nil
 }
 
 func (d *Database) Close() {

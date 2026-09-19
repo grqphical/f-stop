@@ -2,7 +2,6 @@ package storage
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -19,22 +18,22 @@ type Storage struct {
 	directory string
 }
 
-func New() *Storage {
+func New() (*Storage, error) {
 	directory := os.Getenv("PHOTO_STORAGE_DIRECTORY")
 	if directory == "" {
-		log.Fatal("no storage directory was provided")
+		return nil, fmt.Errorf("no storage directory was provided")
 	}
 
 	directory, err := filepath.Abs(directory)
 	if err != nil {
-		log.Fatalf("filepath.Abd: %v\n", err)
+		return nil, fmt.Errorf("filepath.Abs: %w", err)
 	}
 
 	_, err = os.Stat(directory)
 	if err != nil {
 		err = os.MkdirAll(directory, 0755)
 		if err != nil {
-			log.Fatalf("os.MkdirAll: %v\n", err)
+			return nil, fmt.Errorf("os.MkdirAll: %w", err)
 		}
 	}
 
@@ -42,13 +41,13 @@ func New() *Storage {
 	if err != nil {
 		err = os.MkdirAll(filepath.Join(directory, "thumbnails"), 0755)
 		if err != nil {
-			log.Fatalf("os.MkdirAll: %v\n", err)
+			return nil, fmt.Errorf("os.MkdirAll: %w", err)
 		}
 	}
 
 	return &Storage{
 		directory,
-	}
+	}, nil
 }
 
 func (s *Storage) GetStorageLocation() string {

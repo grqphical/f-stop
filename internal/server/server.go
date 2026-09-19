@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -23,17 +22,24 @@ type Server struct {
 	wm   *workers.WorkerManager
 }
 
-func New() *http.Server {
+func New() (*http.Server, error) {
 	s := &Server{}
 
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
-		log.Fatalf("failed to parse port: %v\n", err)
+		return nil, fmt.Errorf("failed to parse port: %w", err)
 	}
 
 	s.port = port
-	s.db = database.New(workerCount)
-	s.si = storage.New()
+	s.db, err = database.New(workerCount)
+	if err != nil {
+		return nil, err
+	}
+	s.si, err = storage.New()
+	if err != nil {
+		s.db.Close()
+		return nil, err
+	}
 	s.wm = workers.NewWorkerManager(
 		workerCount,
 		workers.ImageProcessingWorker,
@@ -48,7 +54,7 @@ func New() *http.Server {
 
 	httpServer.RegisterOnShutdown(s.db.Close)
 	httpServer.RegisterOnShutdown(s.wm.Close)
-	return httpServer
+	return httpServer, nil
 }
 
 func NewMockServer() *gin.Engine {
