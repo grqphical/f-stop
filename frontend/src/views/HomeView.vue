@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { router } from '../router';
-import type { User, PhotoMetadata, Job } from '../models/models';
+import type { PhotoMetadata, Job } from '../models/models';
+import Sidebar from '../components/Sidebar.vue';
 
-const user = ref<User>({ id: 0, username: "", email: "" });
 const error = ref<string | null>(null);
 const loading = ref<boolean>(true);
 
@@ -65,11 +65,6 @@ async function pollThumbnailJob(jobId: number, signal?: AbortSignal): Promise<Jo
     }
 }
 
-async function logoutHandler() {
-    await fetch("/api/v1/logout");
-    router.push("/login")
-}
-
 async function uploadPhotoHandler() {
     const input = document.createElement("input");
     input.type = "file";
@@ -121,7 +116,6 @@ onMounted(async () => {
         if (!response.ok) {
             throw new Error(`Server responded with ${response.status}`);
         }
-        user.value = await response.json() as User;
 
         await fetchPhotos(controller.signal);
 
@@ -139,16 +133,17 @@ onMounted(async () => {
 <template>
     <p v-if="loading">Loading...</p>
     <p v-else-if="error">Something went wrong: {{ error }}</p>
-    <div v-else>
-        <h1>Hello, {{ user.username }}!</h1>
-        <button @click="logoutHandler">Logout</button>
-        <button @click="uploadPhotoHandler">Upload Photo</button>
-
+    <div v-else class="flex flex-row">
+        <Sidebar/>
         <div>
-            <img v-for="photoMetadata in photosMetadata" :src="photoMetadata.thumbnailPermalink"
-                @click="router.push(`/photos/${photoMetadata.id}`)">
+            <button @click="uploadPhotoHandler">Upload Photo</button>
+            <div>
+                <img v-for="photoMetadata in photosMetadata" :src="photoMetadata.thumbnailPermalink"
+                    @click="router.push(`/photos/${photoMetadata.id}`)">
+            </div>
         </div>
     </div>
+    
 
 
 </template>

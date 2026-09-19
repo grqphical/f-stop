@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import HomeView from './Views/HomeView.vue'
-import LoginView from './Views/LoginView.vue'
-import CreateAccountView from './Views/CreateAccountView.vue'
-import PhotoView from './Views/PhotoView.vue'
+import HomeView from './views/HomeView.vue'
+import LoginView from './views/LoginView.vue'
+import CreateAccountView from './views/CreateAccountView.vue'
+import PhotoView from './views/PhotoView.vue'
 
 async function checkUserAuthentication(): Promise<boolean> {
     const response = await fetch("/api/v1/user")
