@@ -38,19 +38,19 @@ onMounted(async () => {
 </script>
 
 <template>
-    <aside class="p-4 pt-8 w-1/6 shrink-0 self-start sticky top-0 flex flex-col h-dvh bg-violet-700 text-white">
+    <aside class="p-4 pt-8 w-1/6 shrink-0 self-start sticky top-0 flex flex-col h-dvh bg-indigo-950 text-indigo-100">
         <div class="mb-24">
             <h2 class="text-3xl font-bold text-center">f-stop</h2>
         </div>
         <div>
             <ul>
-                <li class="py-2 px-3 text-2xl bg-violet-800 cursor-pointer flex flex-row gap-2"><PhImagesSquare :size="32" /> Photos</li>
-                <li class="py-2 px-3 text-2xl cursor-pointer flex flex-row gap-2"><PhTag :size="32"/>  Tags</li>
+                <li class="py-2 px-3 text-2xl rounded-lg bg-indigo-900 text-white cursor-pointer flex flex-row gap-2"><PhImagesSquare :size="32" /> Photos</li>
+                <li class="py-2 px-3 text-2xl rounded-lg cursor-pointer flex flex-row gap-2 hover:bg-white/5 text-indigo-200"><PhTag :size="32"/>  Tags</li>
             </ul>
         </div>
         <div class="mt-auto flex flex-col gap-4">
             <p class="font-bold flex flex-row gap-2 items-center"><PhUser :size="32"/> {{ user.username }}</p>
-            <button @click="logoutHandler" class="bg-violet-800 px-4 py-2 rounded-lg cursor-pointer hover:brightness-95">Logout</button>
+            <button @click="logoutHandler" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg cursor-pointer">Logout</button>
         </div>
     </aside>
 </template>

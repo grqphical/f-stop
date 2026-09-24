@@ -146,19 +146,19 @@ onMounted(async () => {
 </script>
 
 <template>
-    <p v-if="loading">Loading...</p>
-    <p v-else-if="error">Something went wrong: {{ error }}</p>
-    <div v-else class="flex flex-row items-start min-h-screen">
+    <p v-if="loading" class="text-slate-500">Loading...</p>
+    <p v-else-if="error" class="text-red-600">Something went wrong: {{ error }}</p>
+    <div v-else class="flex flex-row items-start min-h-screen bg-slate-100">
         <Sidebar />
         <div class="p-4 flex-1 min-w-0">
             <div>
                 <button @click="uploadPhotoHandler"
-                    class="px-3 py-2 bg-violet-500 text-white cursor-pointer mb-4 rounded-md hover:bg-violet-600 ease-in">Upload
+                    class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer mb-4 rounded-md ease-in">Upload
                     Photo</button>
             </div>
 
             <div class="grid grid-cols-3 gap-2">
-                <div class="shadow-md p-4 rounded-md" v-for="photoMetadata in photosMetadata">
+                <div class="shadow-md p-4 rounded-md bg-white" v-for="photoMetadata in photosMetadata">
                     <img :src="photoMetadata.thumbnailPermalink" @click="router.push(`/photos/${photoMetadata.id}`)"
                         class="cursor-pointer">
                     <p><strong>{{ photoMetadata.exifTakenAt?.toLocaleDateString("en-us", {

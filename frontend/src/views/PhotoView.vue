@@ -66,26 +66,26 @@ onMounted(async () => {
 <template>
     <div class="flex flex-row items-start h-dvh overflow-hidden">
         <Sidebar />
-        <main class="p-6 flex-1 min-w-0 h-full overflow-y-auto flex justify-center">
-            <div v-if="loading" class="text-gray-500 mt-12">Loading...</div>
+        <main class="p-6 flex-1 min-w-0 h-full overflow-y-auto flex justify-center bg-slate-100">
+            <div v-if="loading" class="text-slate-500 mt-12">Loading...</div>
             <div v-else-if="notFound" class="text-center mt-12">
-                <h1 class="text-3xl font-bold">404 Not Found</h1>
-                <p class="text-gray-500 mt-2">This photo does not exist.</p>
+                <h1 class="text-3xl font-bold text-slate-900">404 Not Found</h1>
+                <p class="text-slate-500 mt-2">This photo does not exist.</p>
                 <button @click="router.push('/')"
-                    class="mt-4 px-3 py-2 bg-violet-500 text-white rounded-md hover:bg-violet-600 cursor-pointer">
+                    class="mt-4 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md cursor-pointer">
                     Back to Photos
                 </button>
             </div>
             <div v-else class="w-full max-w-4xl flex flex-col gap-4 h-full min-h-0">
                 <div class="shrink-0">
                     <button @click="router.push('/')"
-                        class="text-sm text-violet-600 hover:text-violet-800 cursor-pointer">
+                        class="text-sm text-indigo-600 hover:text-indigo-800 cursor-pointer">
                         &larr; Back to Photos
                     </button>
                 </div>
 
                 <div
-                    class="bg-neutral-900 rounded-lg shadow-md overflow-hidden flex flex-1 min-h-[240px] justify-center items-center">
+                    class="bg-slate-950 rounded-lg shadow-md overflow-hidden flex flex-1 min-h-[240px] justify-center items-center">
                     <img :src="photoMetadata.permalink" alt="Photo"
                         class="block h-full max-h-full w-auto max-w-full object-cover" />
                 </div>
@@ -93,20 +93,20 @@ onMounted(async () => {
                 <section class="shadow-md rounded-md p-6 bg-white shrink-0">
                     <div class="flex items-start justify-between gap-4 mb-4">
                         <div>
-                            <h1 class="text-xl font-bold">
+                            <h1 class="text-xl font-bold text-slate-900">
                                 {{ photoMetadata.exifTakenAt?.toLocaleDateString("en-us", {
                                     year: 'numeric', month: 'long', day: 'numeric'
                                 }) ?? 'Untitled Photo' }}
                             </h1>
-                            <p class="text-sm text-gray-500">{{ photoMetadata.mimeType }}</p>
+                            <p class="text-sm text-slate-500">{{ photoMetadata.mimeType }}</p>
                         </div>
                         <div class="flex flex-row gap-1">
                             <button @click="downloadPhoto"
-                                class="px-3 py-2 bg-violet-500 text-white text-sm rounded-md hover:bg-violet-600 cursor-pointer shrink-0">
+                                class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-md cursor-pointer shrink-0">
                                 Download Photo
                             </button>
                             <button @click="deletePhoto"
-                                class="px-3 py-2 bg-red-500 text-white text-sm rounded-md hover:bg-red-600 cursor-pointer shrink-0">
+                                class="px-3 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-md cursor-pointer shrink-0">
                                 Delete Photo
                             </button>
                         </div>
@@ -114,27 +114,27 @@ onMounted(async () => {
                     </div>
 
                     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                        <div class="flex justify-between border-b border-neutral-100 pb-2">
-                            <dt class="text-gray-500">Camera</dt>
-                            <dd class="font-medium">{{ photoMetadata.exifCameraModel ?? 'Unknown' }}</dd>
+                        <div class="flex justify-between border-b border-slate-100 pb-2">
+                            <dt class="text-slate-500">Camera</dt>
+                            <dd class="font-medium text-slate-900">{{ photoMetadata.exifCameraModel ?? 'Unknown' }}</dd>
                         </div>
-                        <div class="flex justify-between border-b border-neutral-100 pb-2">
-                            <dt class="text-gray-500">File Size</dt>
-                            <dd class="font-medium">{{ formatByteSize(photoMetadata.size) }}</dd>
+                        <div class="flex justify-between border-b border-slate-100 pb-2">
+                            <dt class="text-slate-500">File Size</dt>
+                            <dd class="font-medium text-slate-900">{{ formatByteSize(photoMetadata.size) }}</dd>
                         </div>
-                        <div class="flex justify-between border-b border-neutral-100 pb-2">
-                            <dt class="text-gray-500">Taken At</dt>
-                            <dd class="font-medium">{{ photoMetadata.exifTakenAt?.toLocaleString() ?? 'Unknown' }}
+                        <div class="flex justify-between border-b border-slate-100 pb-2">
+                            <dt class="text-slate-500">Taken At</dt>
+                            <dd class="font-medium text-slate-900">{{ photoMetadata.exifTakenAt?.toLocaleString() ?? 'Unknown' }}
                             </dd>
                         </div>
-                        <div class="flex justify-between border-b border-neutral-100 pb-2">
-                            <dt class="text-gray-500">Uploaded At</dt>
-                            <dd class="font-medium">{{ photoMetadata.uploaded?.toLocaleString() }}</dd>
+                        <div class="flex justify-between border-b border-slate-100 pb-2">
+                            <dt class="text-slate-500">Uploaded At</dt>
+                            <dd class="font-medium text-slate-900">{{ photoMetadata.uploaded?.toLocaleString() }}</dd>
                         </div>
                         <div v-if="photoMetadata.exifCoordinates?.latitude != null && photoMetadata.exifCoordinates?.longitude != null"
-                            class="flex justify-between border-b border-neutral-100 pb-2 sm:col-span-2">
-                            <dt class="text-gray-500">Location</dt>
-                            <dd class="font-medium">{{ photoMetadata.exifCoordinates.latitude }}, {{
+                            class="flex justify-between border-b border-slate-100 pb-2 sm:col-span-2">
+                            <dt class="text-slate-500">Location</dt>
+                            <dd class="font-medium text-slate-900">{{ photoMetadata.exifCoordinates.latitude }}, {{
                                 photoMetadata.exifCoordinates.longitude }}</dd>
                         </div>
                     </dl>
