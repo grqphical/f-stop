@@ -38,7 +38,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <aside class="p-4 pt-8 w-1/6 shrink-0 self-start sticky top-0 flex flex-col h-screen bg-violet-700 text-white">
+    <aside class="p-4 pt-8 w-1/6 shrink-0 self-start sticky top-0 flex flex-col h-dvh bg-violet-700 text-white">
         <div class="mb-24">
             <h2 class="text-3xl font-bold text-center">f-stop</h2>
         </div>
