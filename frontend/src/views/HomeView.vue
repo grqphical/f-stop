@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { router } from '../router';
-import type { PhotoMetadata, Job } from '../models/models';
+import type { PhotoMetadata, PhotoMetadataDTO, Job, JobDTO } from '../models/models';
 import Sidebar from '../components/Sidebar.vue';
+import { formatByteSize } from '../utils.ts';
 
 const error = ref<string | null>(null);
 const loading = ref<boolean>(true);
@@ -23,8 +24,17 @@ async function fetchPhotos(signal?: AbortSignal): Promise<void> {
     if (!response.ok) {
         throw new Error(`Server responded with ${response.status}`);
     }
-    const jsonData = await response.json() as { photos: PhotoMetadata[] };
-    photosMetadata.value = jsonData.photos;
+    const jsonData = await response.json() as { photos: PhotoMetadataDTO[] };
+    photosMetadata.value = jsonData.photos.map((photo): PhotoMetadata => ({
+        ...photo,
+        uploaded: new Date(photo.uploaded),
+        exifTakenAt: photo.exifTakenAt ? new Date(photo.exifTakenAt) : null,
+    }));
+    photosMetadata.value = photosMetadata.value.sort((a, b) => {
+        const aTime = a.exifTakenAt?.getTime() ?? Number.NEGATIVE_INFINITY;
+        const bTime = b.exifTakenAt?.getTime() ?? Number.NEGATIVE_INFINITY;
+        return bTime - aTime;
+    });
 }
 
 async function pollThumbnailJob(jobId: number, signal?: AbortSignal): Promise<Job> {
@@ -41,7 +51,12 @@ async function pollThumbnailJob(jobId: number, signal?: AbortSignal): Promise<Jo
             if (!response.ok) {
                 throw new Error(`Job poll failed with status ${response.status}`);
             }
-            const job = await response.json() as Job;
+            const jobDTO = await response.json() as JobDTO;
+            const job: Job = {
+                ...jobDTO,
+                createdAt: new Date(jobDTO.createdAt),
+                updatedAt: new Date(jobDTO.updatedAt),
+            };
 
             if (job.status === "done") {
                 return job;
@@ -136,10 +151,25 @@ onMounted(async () => {
     <div v-else class="flex flex-row items-start min-h-screen">
         <Sidebar />
         <div class="p-4 flex-1 min-w-0">
-            <button @click="uploadPhotoHandler">Upload Photo</button>
             <div>
-                <img v-for="photoMetadata in photosMetadata" :src="photoMetadata.thumbnailPermalink"
-                    @click="router.push(`/photos/${photoMetadata.id}`)">
+                <button @click="uploadPhotoHandler"
+                    class="px-3 py-2 bg-violet-500 text-white cursor-pointer mb-4 rounded-md hover:bg-violet-600 ease-in">Upload
+                    Photo</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+                <div class="shadow-md p-4 rounded-md" v-for="photoMetadata in photosMetadata">
+                    <img :src="photoMetadata.thumbnailPermalink" @click="router.push(`/photos/${photoMetadata.id}`)"
+                        class="cursor-pointer">
+                    <p><strong>{{ photoMetadata.exifTakenAt?.toLocaleDateString("en-us", {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                            }) }}</strong> {{ formatByteSize(photoMetadata.size) }}
+                    </p>
+                </div>
+
+
             </div>
         </div>
     </div>
