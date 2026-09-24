@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import type { PhotoMetadata, PhotoMetadataDTO } from '../models/models';
 import { router } from '../router';
-import { formatByteSize } from '../utils';
+import { formatByteSize, getImageExtension } from '../utils';
 import Sidebar from '../components/Sidebar.vue';
 
 const route = useRoute()
@@ -27,6 +27,17 @@ async function deletePhoto() {
     }
 
     router.push("/")
+}
+
+async function downloadPhoto() {
+    const a = document.createElement("a");
+    a.href = photoMetadata.value.permalink;
+    a.download = `image.${getImageExtension(photoMetadata.value.mimeType)}`
+
+    document.body.appendChild(a);
+
+    a.click();
+    document.body.removeChild(a);
 }
 
 onMounted(async () => {
@@ -76,7 +87,7 @@ onMounted(async () => {
                 <div
                     class="bg-neutral-900 rounded-lg shadow-md overflow-hidden flex flex-1 min-h-[240px] justify-center items-center">
                     <img :src="photoMetadata.permalink" alt="Photo"
-                        class="block h-full max-h-full w-auto max-w-full object-contain" />
+                        class="block h-full max-h-full w-auto max-w-full object-cover" />
                 </div>
 
                 <section class="shadow-md rounded-md p-6 bg-white shrink-0">
@@ -89,10 +100,17 @@ onMounted(async () => {
                             </h1>
                             <p class="text-sm text-gray-500">{{ photoMetadata.mimeType }}</p>
                         </div>
-                        <button @click="deletePhoto"
-                            class="px-3 py-2 bg-red-500 text-white text-sm rounded-md hover:bg-red-600 cursor-pointer shrink-0">
-                            Delete Photo
-                        </button>
+                        <div class="flex flex-row gap-1">
+                            <button @click="downloadPhoto"
+                                class="px-3 py-2 bg-violet-500 text-white text-sm rounded-md hover:bg-violet-600 cursor-pointer shrink-0">
+                                Download Photo
+                            </button>
+                            <button @click="deletePhoto"
+                                class="px-3 py-2 bg-red-500 text-white text-sm rounded-md hover:bg-red-600 cursor-pointer shrink-0">
+                                Delete Photo
+                            </button>
+                        </div>
+
                     </div>
 
                     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
