@@ -133,9 +133,9 @@ onMounted(async () => {
 <template>
     <p v-if="loading">Loading...</p>
     <p v-else-if="error">Something went wrong: {{ error }}</p>
-    <div v-else class="flex flex-row">
-        <Sidebar/>
-        <div>
+    <div v-else class="flex flex-row items-start min-h-screen">
+        <Sidebar />
+        <div class="p-4 flex-1 min-w-0">
             <button @click="uploadPhotoHandler">Upload Photo</button>
             <div>
                 <img v-for="photoMetadata in photosMetadata" :src="photoMetadata.thumbnailPermalink"
@@ -143,7 +143,7 @@ onMounted(async () => {
             </div>
         </div>
     </div>
-    
+
 
 
 </template>
