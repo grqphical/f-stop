@@ -3,6 +3,7 @@ import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { router } from '../router';
 import type { PhotoMetadata, PhotoMetadataDTO, Job, JobDTO, Tag } from '../models/models';
 import Sidebar from '../components/Sidebar.vue';
+import PhotoTags from '../components/PhotoTags.vue';
 import TagAssignDialog from '../components/TagAssignDialog.vue';
 import { formatByteSize } from '../utils.ts';
 import { PhPlus } from '@phosphor-icons/vue';
@@ -25,6 +26,13 @@ function handleTagsAssigned(photoId: string, tags: Tag[]): void {
     const photo = photosMetadata.value.find((p) => p.id === photoId);
     if (photo) {
         photo.tags = [...(photo.tags ?? []), ...tags];
+    }
+}
+
+function handleTagRemoved(photoId: string, tagId: number): void {
+    const photo = photosMetadata.value.find((p) => p.id === photoId);
+    if (photo) {
+        photo.tags = (photo.tags ?? []).filter((t) => t.id !== tagId);
     }
 }
 
@@ -201,8 +209,8 @@ onMounted(async () => {
                             }) }}</strong> {{ formatByteSize(photoMetadata.size) }}
                     </p>
                     <div class="flex flex-row gap-1">
-                        <code class="bg-gray-300 rounded-md px-1 text-center"
-                            v-for="tag in photoMetadata.tags ?? []" :key="tag.id">{{ tag.name }}</code>
+                        <PhotoTags :photo-id="photoMetadata.id" :tags="photoMetadata.tags ?? []"
+                            @removed="handleTagRemoved" />
                         <button @click="openTagDialog(photoMetadata)"
                             class="bg-gray-300 rounded-md px-1 py-1 aspect-square cursor-pointer hover:bg-gray-400"
                             aria-label="Add tag" title="Add tag">
