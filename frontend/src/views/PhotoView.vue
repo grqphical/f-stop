@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import type { PhotoMetadata, PhotoMetadataDTO } from '../models/models';
+import type { PhotoMetadata, PhotoMetadataDTO, Tag } from '../models/models';
 import { router } from '../router';
 import { formatByteSize, getImageExtension } from '../utils';
 import Sidebar from '../components/Sidebar.vue';
+import TagAssignDialog from '../components/TagAssignDialog.vue';
+import { PhPlus } from '@phosphor-icons/vue';
 
 const route = useRoute()
 
@@ -12,6 +14,16 @@ const id = route.params.id;
 const photoMetadata = ref({} as PhotoMetadata);
 const notFound = ref(false);
 const loading = ref(true);
+
+const activeTagPhoto = ref<PhotoMetadata | null>(null);
+
+function openTagDialog(photo: PhotoMetadata): void {
+    activeTagPhoto.value = photo;
+}
+
+function closeTagDialog(): void {
+    activeTagPhoto.value = null;
+}
 
 async function deletePhoto() {
     if (!confirm("Are you sure you want to delete this photo?")) {
@@ -42,7 +54,7 @@ async function downloadPhoto() {
 
 onMounted(async () => {
     try {
-        const response = await fetch(`/api/v1/photo/${id}`)
+        let response = await fetch(`/api/v1/photo/${id}`)
         if (response.status === 404) {
             notFound.value = true;
             return;
@@ -57,10 +69,25 @@ onMounted(async () => {
             uploaded: new Date(jsonData.uploaded),
             exifTakenAt: jsonData.exifTakenAt ? new Date(jsonData.exifTakenAt) : null,
         };
+
+        response = await fetch(`/api/v1/photo/${photoMetadata.value.id}/tags`, {
+            credentials: "same-origin",
+        })
+        if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}`);
+        }
+        const tagsResponse = await response.json() as { tags: Tag[] };
+        photoMetadata.value = { ...photoMetadata.value, tags: tagsResponse.tags };
+
     } finally {
         loading.value = false;
     }
 })
+
+function handleTagsAssigned(photoId: string, tags: Tag[]): void {
+    if (photoMetadata.value?.id !== photoId) return;
+    photoMetadata.value.tags = [...(photoMetadata.value.tags ?? []), ...tags];
+}
 </script>
 
 <template>
@@ -98,7 +125,17 @@ onMounted(async () => {
                                     year: 'numeric', month: 'long', day: 'numeric'
                                 }) ?? 'Untitled Photo' }}
                             </h1>
+                            <div class="flex flex-row gap-1">
+                                <code class="bg-gray-300 rounded-md px-1 text-center"
+                                    v-for="tag in photoMetadata.tags ?? []" :key="tag.id">{{ tag.name }}</code>
+                                <button @click="openTagDialog(photoMetadata)"
+                                    class="bg-gray-300 rounded-md px-1 py-1 aspect-square cursor-pointer hover:bg-gray-400"
+                                    aria-label="Add tag" title="Add tag">
+                                    <PhPlus size="12px" weight="bold" />
+                                </button>
+                            </div>
                             <p class="text-sm text-slate-500">{{ photoMetadata.mimeType }}</p>
+
                         </div>
                         <div class="flex flex-row gap-1">
                             <button @click="downloadPhoto"
@@ -110,7 +147,6 @@ onMounted(async () => {
                                 Delete Photo
                             </button>
                         </div>
-
                     </div>
 
                     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
@@ -124,7 +160,8 @@ onMounted(async () => {
                         </div>
                         <div class="flex justify-between border-b border-slate-100 pb-2">
                             <dt class="text-slate-500">Taken At</dt>
-                            <dd class="font-medium text-slate-900">{{ photoMetadata.exifTakenAt?.toLocaleString() ?? 'Unknown' }}
+                            <dd class="font-medium text-slate-900">{{ photoMetadata.exifTakenAt?.toLocaleString() ??
+                                'Unknown' }}
                             </dd>
                         </div>
                         <div class="flex justify-between border-b border-slate-100 pb-2">
@@ -142,4 +179,5 @@ onMounted(async () => {
             </div>
         </main>
     </div>
+    <TagAssignDialog :photo="activeTagPhoto" @close="closeTagDialog" @assigned="handleTagsAssigned" />
 </template>
