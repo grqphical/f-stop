@@ -25,6 +25,7 @@ export interface PhotoMetadata {
   exifCoordinates: GPSCoordinates
   exifCameraModel: string | null
   exifTakenAt: Date | null // parsed from ISO 8601 date string
+  tags: Tag[] | null
 }
 
 export interface JobPayload {
