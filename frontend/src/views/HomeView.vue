@@ -7,6 +7,7 @@ import PhotoTags from '../components/PhotoTags.vue';
 import TagAssignDialog from '../components/TagAssignDialog.vue';
 import { formatByteSize } from '../utils.ts';
 import { PhPlus } from '@phosphor-icons/vue';
+import spinner from "../spinner.svg"
 
 const error = ref<string | null>(null);
 const loading = ref<boolean>(true);
@@ -187,7 +188,9 @@ onMounted(async () => {
 </script>
 
 <template>
-    <p v-if="loading" class="text-slate-500">Loading...</p>
+    <div v-if="loading" class="flex min-h-screen items-center justify-center bg-indigo-950">
+        <img :src="spinner" alt="Loading Indicator" class="w-24 h-24 brightness-0 invert">
+    </div>
     <p v-else-if="error" class="text-red-600">Something went wrong: {{ error }}</p>
     <div v-else class="flex flex-row items-start min-h-screen bg-slate-100">
         <Sidebar />
