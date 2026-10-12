@@ -188,11 +188,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div v-if="loading" class="flex min-h-screen items-center justify-center bg-indigo-950">
-        <img :src="spinner" alt="Loading Indicator" class="w-24 h-24 brightness-0 invert">
-    </div>
-    <p v-else-if="error" class="text-red-600">Something went wrong: {{ error }}</p>
-    <div v-else class="flex flex-row items-start min-h-screen bg-slate-100">
+    <div class="flex flex-row items-start min-h-screen bg-slate-100">
         <Sidebar />
         <div class="p-4 flex-1 min-w-0">
             <div>
@@ -201,7 +197,11 @@ onMounted(async () => {
                     Photo</button>
             </div>
 
-            <div class="grid grid-cols-3 gap-2">
+            <div v-if="loading" class="flex items-center justify-center py-20">
+                <img :src="spinner" alt="Loading Indicator" class="w-24 h-24">
+            </div>
+            <p v-else-if="error" class="text-red-600">Something went wrong: {{ error }}</p>
+            <div v-else class="grid grid-cols-3 gap-2">
                 <div class="shadow-md p-4 rounded-md bg-white" v-for="photoMetadata in photosMetadata">
                     <img :src="photoMetadata.thumbnailPermalink" @click="router.push(`/photos/${photoMetadata.id}`)"
                         class="cursor-pointer">
